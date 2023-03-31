@@ -1,0 +1,17 @@
+- Las imágenes se basan en capas. Si por ejemplo, volvemos a reconstruir la imagen, solo
+  se reevalúan las instrucciones donde cambió algo y todas las instrucciones posteriores.
+
+- Por ejemplo, si cambiamos el código y luego generamos un nuevo .jar con el código modificado,
+  se ejecutará las instrucciones, dentro del archivo Dockerfile:
+
+	COPY ./target/dk-ms-usuarios-0.0.1-SNAPSHOT.jar .
+
+	EXPOSE 8001
+
+  Y las instrucciones posteriores. Exceptuando la:
+
+	ENTRYPOINT ["java", "-jar", "dk-ms-usuarios-0.0.1-SNAPSHOT.jar"]
+
+  ya que es una capa que le pertenece al contenedor y no a la imagen.
+
+- En el Dockerfile, cada línea de instrucción representa una capa.

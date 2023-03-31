@@ -1,0 +1,58 @@
+Construiremos nuestra imagen a partir del Dockerfile para nuestros contenedores del microservicio usuarios.
+
+RECORDANDO
+---------------------------
+- Construimos el .jar de nuestro proyecto y ésta se ubica en el directorio ./target de nuestra pc local.
+- Cuando construyamos la imagen, teniendo en cuenta el archivo Dockerfile, vemos que se copiará
+  el .jar de nuestro directorio ./target dentro del directorio de trabajo /app de nuestro contenedor.
+- Cuando levantemos el contenedor (con docker run) se invocará el entrypoint y este ejecutará el 
+  comando para levantar nuestra aplicación: java -jar dk-ms-usuarios-0.0.1-SNAPSHOT.jar, pero
+  dentro del contenedor.
+
+CONSTRUYENDO NUESTRA IMAGEN DE DOCKER
+---------------------------------------
+- Mediante cmd nos ubicamos en la raíz del microservicio usuarios:
+	M:\PROGRAMACION\DESARROLLO_JAVA_SPRING\INTELLIJ_IDEA\16.udemy_andres_guzman\03.guia_completa_docker_y_kubernetes_spring_boot_2023\curso-kubernetes\dk-ms-usuarios
+- Si hacemos un ls, veremos que está nuestro archivo Dockerfile, que es con el que construiremos la imagen docker.
+- Para construir la imagen, ejecutamos el siguiente comando:
+	> docker build .
+  ¿Por qué punto?, bueno con ese comando estamos diciendo que construya la imagen en la ubicación donde se encuentra el Dockerfile y como
+  mediante el cmd nos posicionaoms en la raíz del microservicio usuario (donde precisamente está el Dockerfile) automáticamente lo encuentra
+  con ese nombre, que es su nombre por defecto y va a construir la imagen a partir de ese archivo.
+- Ahora sí, presionamos enter y esperamos que se construya la imagen. ¡Importante! es importante que Docker Desktop esté corriendo.
+
+NOTA:
+La capa ENTRYPOINT no es parte de la imagen, es decir no se ejecuta cuando se construye la imagen, sino se va a ejecutar cuando
+construyamos los contenedores.
+
+CREANDO NUESTRO CONTENEDOR
+---------------------------
+- Luego de haber construido la imagen docker podemos crear el contenedor a partir del identificador de la imagen creada.
+- Para ver el identificador, solo listamos las imágenes con el comando:
+	> docker images
+- Copiamos el identificador de la imagen y ejecutamos el siguiente comando:
+	> docker run fe9574dc9377
+- De esta manera se construirá nuestro contenedor y ejecutará el ENTRYPOINT donde está configurado el arranque de nuestra aplicación.
+- De antemano fallará ya que tratará de conectarse a mysql, y si vemos el archivo de properties donde están las configuraciones, la
+  dirección a la que apunta el datasource de mysql es localhost, pero es localhost de la pc local que es muy distinto al localhost
+  del contenedor, es decir nuestro mysql está instalado en nuestra pc local y no en el contenedor, por el momento no tenemos mysql
+  en el contenedor. Entonces, 
+  ¿Qué podemos hacer para que nuestro contenedor se pueda comunicar con nuestro mysql que está fuera de él, está en nuestra máquina local?
+- Para responder a la pregunta, existe un nombre de dominio especial de docker: 
+	host.docker.internal, 
+  el cual reemplazará a localhost definido en el application.properties. Lo que hace es que, nuestra aplicación que está dentro del 
+  contenedor se comunicará con mysql que está fuera de él, es decir en nuestra máquina local.
+- Luego de haber generado el .jar y la imagen ejecutaremos el contenedor, pero es necesario además agregarle el puerto a través
+  del cual se comunicará con nuestro contenedor. Son dos puertos, externo:interno, donde el interno corresponde al puerto en el que
+  la aplicación está corriendo internamente en el contenedor, en nuestro caso el microservicio usuarios está corriendo dentro 
+  del contenedor en el puerto 8001, el puerto externo puede ser cualquier valor, pero para mantener similitudes usaremos los mismos valores:
+	> docker run -p 8001:8001 9b193211c0b0
+
+NOTA:
+[1] host.docker.internal, es para que se comunique desde dentro del contenedor hacia nuestra máquina local, hacia afuera.
+[2] Como en el application.properties hicimos el cambio de mysql de localhost a host.docker.internal, es necesario volver a generar el .jar, 
+    y luego volver a generar la imagen y posteriormente generar el contenedor.
+[3] Ahora, como cambiamos el localhost a host.docker.internal, al momento de generar el .jar dará un error ya que en nuestra pc local 
+    no funciona el host.docker.internal (esto solo funciona dentro del contenedor), pero necesitamos generar el .jar con dicho cambio,
+    por lo tanto debemos saltarnos el test que se realiza al momento de construir el .jar:
+	> .\mvnw.cmd clean package -DskipTests

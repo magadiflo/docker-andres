@@ -1,0 +1,49 @@
+MODIFICANDO DOCKER-COMPOSE PARA OBTENER IMÁGENES DESDE REPOSITORIO DOCKER HUB
+*****************************************************************************
+
+CONTEXTO:
+	En el docker-compose.yml que tenemos hasta el momento, estamos construyendo 
+	nuestras imágenes con build para nuestros microservicios de cursos y usuarios.
+
+	En vez de construirlas, lo que haremos será obtenerlas de manera remota desde
+	docker hub. Esto es con la finalidad de poder emigrar y de llegar nuestro ecosistema
+	de contenedores a producción, por ejemplo a una máquina remote como AWS.
+
+
+- Lo que haremos será reemplazar el build: por image: y hacemos referencia al nombre
+  de la imagen que tenemos en nuestro repositorio de docker hub, de tal forma que 
+  quedaría así:
+
+---------------------------------------------------
+  dk-ms-usuarios:
+    container_name: dk-ms-usuarios
+    image: magadiflo/usuarios:latest
+
+
+  dk-ms-cursos:
+    container_name: dk-ms-cursos
+    image: magadiflo/cursos:latest
+---------------------------------------------------
+
+- ¡IMPORTANTE! si nuestra imagen del docker hub se actualiza, es decir, hemos vuelto 
+  a subir la imagen con código modificado usando el push y loguéandonos por cmd, 
+  debemos traerlo manualmente a nuestro docker usando el 
+
+	> docker pull nombre_imagen
+
+  ya que por defecto no se actualiza el contenedor local.
+
+
+- Finalmente, observamos que nuestro docker-compose.yml, todas las imágenes, tanto las de las
+  BD como nuestras propias imágenes serán descargadas desde docker hub.
+
+
+EJECUTANDO DOCKER-COMPOSE
+**************************
+- Ahora ejecutamos docker-compose.yml para que descargue nuestras imágenes e inicie nuestros contenedores:
+
+	>  docker-compose up -d
+
+- Una vez finalizado, realizamos las pruebas desde POSTMAN, debemos observar que NUESTROS DATOS
+  de las BASES DE DATOS aún se mantienen, y la comunicación entre ambos MS está funcionando
+  correctamente.

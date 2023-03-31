@@ -1,0 +1,99 @@
+VARIABLES DE AMBIENTE (ENV) PARA LOS PARÁMETROS DE MYSQL Y POSTGRESQL
+*********************************************************************
+- Como hasta este punto estuvimos hiciendo cambios en los puertos para probar las
+  variables de ambiente y los argumentos, generaremos nuevamente la imagen
+  pero ahora ya con los valores que hemos venido trabajando desde un inicio,
+  con el puerto 8001 que definimos en el dockerfile
+
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+- En el archivo .env definimos las variables de ambiente para usarlos en el
+  application.properties para las configuraciones de MYSQL.
+  
+- Se muestra la configuración realizada en el application.properties para MySQL
+
+	spring.datasource.url=jdbc:mysql://${DB_HOST:mysql8:3306}/${DB_DATABASE:bd_dk_ms_usuarios}
+	spring.datasource.username=${DB_USERNAME:root}
+	spring.datasource.password=${DB_PASSWORD:magadiflo}
+
+	NOTA
+		* DB_HOST, variable de ambiente que definiremos en el archivo .env
+		* DB_HOST:mysql8:3306, el valor mysql8:3306 será el valor que tome por defecto el DB_HOST,
+			es similar al PORT:8001, cuyo valor por defecto sería 8001
+		* DB_DATABASE, nuestra otra variable de ambiente
+		* DB_DATABASE:bd_dk_ms_usuarios, el valor de bd_dk_ms_usuarios es el valor por defecto
+			que tomará nuestra variable de ambiente en caso no se defina o asigne alguna variable
+			de entorno
+
+- Luego de haber agregado las variables de ambiente para las configuraciones de MySQL en el 
+  application.properties, debemos generar nuevamente la imagen para nuestro microservicio usuarios.
+
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+- Ahora, enel microservicio de cursos hacemos el mismo procedimiento. Creamos el archivo .env y definimos
+  las variables de ambiente y modificamos su application.properties por dichas varaibles de ambiente.
+  Finalmente debemos generar nuevamente la imagen.
+
+	> docker build -t cursos . -f .\dk-ms-cursos\Dockerfile
+
+- Crearemos sus contenedores a partir de las imágenes creadas (Trabajaremos con las variables de entorno definidas
+  en el archivo .env): 
+		
+	> docker run -p 8001:8001 --env-file .\dk-ms-usuarios\.env -d --rm --name dk-ms-usuarios --network spring usuarios
+	> docker run -p 8002:8002 --env-file .\dk-ms-cursos\.env -d --rm --name dk-ms-cursos --network spring curso
+
+
+- Una vez ejecutadas los contenedores podemos lanzar el siguiente comando para inspeccionar y ver qué estén 
+  nuestras variables de ambiente definidas:
+	
+	> docker container inspect dk-ms-usuarios
+
+   Nos ubicamos en el key "Env" que será un arreglo que contendrá todas nuestras variables de ambiente definidas:
+
+            "Env": [
+                "PORT=8001",
+                "DB_HOST=mysql8:3306",
+                "DB_DATABASE=bd_dk_ms_usuarios",
+                "DB_USERNAME=root",
+                "DB_PASSWORD=magadiflo",
+                "PATH=/opt/openjdk-17/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "JAVA_HOME=/opt/openjdk-17",
+                "JAVA_VERSION=17-ea+14"
+            ],
+
+
+
+
+CAMBIANDO HOST PARA CONECTARNOS A NUESTRAS BD DE NUESTRA PC LOCAL
+*****************************************************************
+- Como ahora tenemos centralizado nuestras variables de ambiente, podemos hacer el cambio de la variable
+  DB_HOST para poder conectarnos a nuestra BD de local, tanto para mysql como para postgresql.
+
+- Actualmente están apuntando al contendor de las bd de mysql y posgres. Entonces para poder conectarnos 
+  a las BD de nuestra pc local escribirmos en cada application.propertie, lo siguiente:
+
+	DB_HOST=host.docker.internal:3306 (En el properties de usuarios)
+	DB_HOST=host.docker.internal:5432 (En el properties de cursos)
+
+- Volvemos a generar el contenedor de la misma forma como generamos al inicio, o sea
+  referenciando al archivo .env
+	
+	> docker run -p 8001:8001 --env-file .\dk-ms-usuarios\.env -d --rm --name dk-ms-usuarios --network spring usuarios
+	> docker run -p 8002:8002 --env-file .\dk-ms-cursos\.env -d --rm --name dk-ms-cursos --network spring cursos
+
+- Probamos desde postman y debemos ver que sigue funcionando, pero la diferencia es que ahora nuestra aplicación está
+  conectada a nuestra base de datos de nuestra pc local y no a las BD dockerizadas.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

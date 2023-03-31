@@ -1,0 +1,29 @@
+- Tenemos nuestro microservicio usuarios contenerizado, es decir ya está dentro de un
+  contenedor y se está ejecutando correctamente.
+
+- Ahora, nuestro microservicio cursos está en nuestro local, y lo que se requiere es que
+  ejecutemos nuestro microservicio cursos en local y establezcamos la comunicación con el 
+  microservicio usuarios que está dentro del contenedor. 
+
+- Para lograr eso, primero debemos realizar un cambio en el cliente http feign (ICursoClientFeign) 
+  del microservicio usuarios y cambiar la siguiente línea:
+	@FeignClient(name = "dk-ms-cursos", url = "http://host.docker.internal:8002", path = "/api/v1/cursos")
+  Es decir, el host.docker.internal lo establecimos en reemplazo del valor original que era localhost.
+
+- Como siguiente paso, es volver a generar el .jar del microservicio usuarios, crear la imagen y 
+  ejecutar el contenedor (Si tenemos ejecutando previamente un contenedor sin los cambios debemos detenerlo
+  para volver a realizar todos los pasos)
+	1. Generando .jar
+		> .\mvnw.cmd clean package -DskipTests
+	2. Generar la imagen, esta vez dándole un nombre (tag -t)
+		> docker build -t usuarios .
+	3. Generar el contenedor
+		> docker run -p 8001:8001 usuarios (esta vez usamos el nombre que le dimos a la imagen y no el identificador)
+- Una vez tengamos corriendo nuestro contenedor con los cambios agregados a nuestro microservicio usuarios, 
+  ejecutaremos de manera local nuestro microservicio cursos. Podemos ejecutar usando el IDE de Intellij IDEA, u otra forma
+  sería mediante terminal, es decir, primero generar el .jar:
+	> .\mvnw.cmd clean package
+  Luego, ejecutar el jar con el comando (recordar que estamos mediante cmd posicionados en la raíz del proyecto):
+	> java -jar .\target\dk-ms-cursos-0.0.1-SNAPSHOT.jar
+- Ahora, ambos corriendo, probamos en postman la comunicación entre ambos proyectos. Hasta el momento todo
+  fuciona correctamente. 

@@ -1,0 +1,28 @@
+SIMULAREMOS UN CAMBIO EN NUESTRO CÓDIGO FUENTE DEL MICROSERVICIO USUARIOS
+-------------------------------------------------------------------------
+- Primero levantamos nuestro docker desktop.
+- Realizamos el cambioe, en nuestro caso agregamos un nuevo método handler en
+  el resource simulando un error.
+
+- Ejecutamos el siguiente comando para actualizar la imagen docker:
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile 
+
+- Hasta este punto hemos crado nuevamente nuestra imagen llamado usuarios, ahora debemos
+  renombrarlo para poder subirlo a docker hub. Le cambiaremos el nombre de
+  usuarios a magadiflo/usuarios:
+	> docker tag usuarios magadiflo/usuarios:v2
+
+	NOTA:
+		* Le renombramos a v2 para que no sea igual al que ya tenemos ya que por
+ 		  defecto si no le ponemos tag la versión será latest.
+
+- Nos logueamos mediante la terminal si no lo estamos para poder subir la iamgen a docker hub:
+	> docker login
+		username: magadiflo
+		password: magadiflo
+
+- Subimos nuestra imagen a docker hub:
+	> docker push magadiflo/usuarios:v2
+
+- Actualizamos la imagen:
+	> kubectl set image deployment dk-ms-usuarios usuarios=magadiflo/usuarios:v2

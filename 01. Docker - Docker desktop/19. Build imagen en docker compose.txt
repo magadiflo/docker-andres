@@ -1,0 +1,117 @@
+BUILD IMAGEN EN DOCKER COMPOSE
+******************************
+- Con respecto a las BD de MySQL y Postgres, esas imágenes se descargan de docker hub.
+- ¿Y qué pasa con las imágenes de los microservicios usuarios y cursos? pues, esas imágenes
+  se construyen a partir de un Dockerfile, pero la construimos nosotros.
+- Entonces, para poder construir la imágen debemos hacer unos cambios en el docker-compose.yml,
+  ya que en el apartado de los contenedores estamos especificando una imagen existente, es decir
+  allí estamos suponiendo de que la imagen ya existe:
+
+	  dk-ms-usuarios:
+    	    container_name: dk-ms-usuarios
+    	    image: usuarios:latest			<---- aquí le estamos diciendo que el contenedor
+									se creará a partir de la imagen usuarios:latest,
+									es decir, la imagen ya existe. Pero ahora, 
+									haremos como si no existiera para que lo construya.
+
+- Modificando los contenedores para que construya la imagen. 
+  Cambiamos image: por build:
+
+-----------------------------------------------------
+  dk-ms-usuarios:
+    container_name: dk-ms-usuarios
+    build:
+      context: ./
+      dockerfile: ./dk-ms-usuarios/Dockerfile
+
+
+  dk-ms-cursos:
+    container_name: dk-ms-cursos
+    build:
+      context: ./
+      dockerfile: ./dk-ms-cursos/Dockerfile
+-----------------------------------------------------
+
+NOTA:
+	* ./, es el punto de partida, la raíz desde donde empezaremos a copiar los archivos. Es similar
+	    al punto (.) que usamos en la línea de comandos cuando hacíamos: 
+		docker build . -f .\dk-ms-usuarios\Dockerfile
+  	   Ese punto de partida será nuestro contexto.
+
+- Con ese cambio, las imágenes se van a construir, siempre y cuando no estén construidas, si ya lo están
+  entonces tomará las imágenes existentes.
+
+EJECUTANDO DOCKER-COMPOSE CON LOS CAMBIOS PARA LA CONSTRUCCIÓN DE IMÁGENES
+**************************************************************************
+- Antes de ejecutar docker-compose, primero nos aseguraremos de que no tengamos ningún contenedor
+  ni ninguna imagen, que todo esté vacío. Para eliminar las imágenes usamos lo siguiente:
+
+	> docker image prune -a
+
+	DONDE:
+		* -a, elimine todas las imágenes no utilizadas, no solo las que cuelgan
+
+- Ejecutando nuestro docker-compose
+
+	> docker-compose up -d
+
+	DONDE:
+		* -d, recordar que es en modo dettached
+
+- Como resultado, vemos que se empieza a descargar las imágenes de las BD (ya que tmb las eliminamos) y
+  a construir las imágenes de los microservicios, posteriormente empieza a generar los contenedores. 
+  Al finalizar muestra el siguiente resultado:
+
+
+[+] Running 0/0
+ - Network spring  Creating                                                                                                                                                                                                              0.1s [+] Running 5/57T16:28:16-05:00" level=warning msg="volume \"data-mysql\" already exists but was not created by Docker Compose. Use `external: true` to use an existing volume"
+Network spring            Created
+Container postgres14      Started                                                                                                                                                                                                      Container mysql8          Started                                                                                                                                                                                                     Container dk-ms-usuarios  Started                                                                                                                                                                                                      Container dk-ms-cursos    Started
+
+- Listamos para ver las imágenes creadas:
+
+REPOSITORY                        TAG         IMAGE ID       CREATED        SIZE
+curso-kubernetes-dk-ms-cursos     latest      9c03c7e91ecf   21 hours ago   373MB
+curso-kubernetes-dk-ms-usuarios   latest      f16b16e0a312   21 hours ago   374MB
+mysql                             8           4f06b49211c0   11 days ago    530MB
+postgres                          14-alpine   09b26fe01cdd   3 weeks ago    242MB
+
+- Se puede observar que le concatenó un nombre a las imágenes de nuestros microservicios: curso-kubernetes-. Pero no hay problema
+  ya que hasta este punto debería estar funcionando la aplicación.
+
+- Realizamos pruebas desde POSTMAN y vemos que todo está funcionando bien, inclusive los datos que teníamos desde un principio
+  aún se mantienen ya que estamos trabajando con volúmenes.
+
+- Ahora, detenemos y eliminamos todos los contenedores:
+
+	>  docker-compose down 	
+
+- Volvemos a ejecutar nuestro:
+
+	> docker-compose up -d
+
+  Será súper rápido, puesto que las imágenes ya están construidas. Tomará dichas imágenes existentes para crear los contenedores.
+
+- ¿Qué pasa si cambiamos parte del código de la aplicación?, lamentablemente como las imágenes ya existen no tomará dichos cambios,
+  puesto que tomará las imágenes existentes (imágenes que aún mantienen el código antiguo). 
+
+- ¿Qué se puede hacer?, lo que se puede hacer es forzar la construcción de las imágenes con el docker up
+
+- Primero detenemos y eliminamos los contenedores:
+
+	> docker-compose down
+
+- Ahora, usando el docker-compose up forzaremos a que se construya nuevamente las imágenes:
+
+	> docker-compose up --build -d
+
+	DONDE:
+		*  --build, construye las imágenes antes de iniciar los contenedores
+
+- CONCLUSIÓN: Si hacemos un cambio en el código debemos necesariamente usar el --build para que
+  		  vuelva a construir la imagen con dicho cambio y luego inicialice los contenedores.
+
+
+- Si solo queremos construir las imágenes y no levantar los contenedores podemos usar:
+	
+	> docker-compose build

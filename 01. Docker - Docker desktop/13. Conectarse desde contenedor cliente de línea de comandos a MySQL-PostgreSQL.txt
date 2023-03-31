@@ -1,0 +1,65 @@
+- Crearemos un contenedor del tipo "utilitario" es decir, un contenedor que nos permitirá conectarse a MySQL/PostgreSQL,
+  es un cliente para línea de comandos. No tiene nada que ver con la instancia que tenemos como contenedor.
+
+- Primero debemos verificar que los contenedores de BD estén levantados.
+
+
+PARA MYSQL
+***********
+
+- Creamos el contenedor utilitario e ingresamos a su línea de comandos:
+
+	> docker run -it --rm --network spring mysql:8 bash
+
+	DONDE:
+		* -it, habilita la línea de comandos para trabajar de forma interactiva, de modo que se pueda ingresar datos y ver los mismos
+       		mediante la consola (input/output)
+		* mysql:8, es la imagen a partir del cual crearemos el utilitario como contenedor.
+		* bash (o /bin/bash), es la línea de comandos o cmd
+
+- Para ingresar al mysql, luego de haber ingresado mediante el comando anterior, escribiremos:
+
+	> mysql -hmysql8 -uroot -p
+
+	DONDE:
+		* mysql, es un comando disponible en el contenedor, es un cliente de mysql
+		* -h, significa host, en este caso sería a qué contenedor nos vamos a conectar
+		* mysql8, nombre del contenedor al cual nos vamos a conectar
+		* -u, para escribir el usuario de la BD
+		* -p, para escribir la password de la BD
+
+  Escribirmos la password y ya estaremos conectados al contenedor de MySQL.
+
+- Podemos hacer algunas consultas a la BD de MySQL mediante la línea de comandos:
+
+	> show databases;
+	> use bd_dk_ms_usuarios;
+	> show tables;
+	> desc usuarios;
+	> select * from usuarios;
+
+- Para salir de la línea de comandos y del contenedor de línea de comandos,
+	> exit
+
+- NOTA: Al salir del contenedor "utilitario" y listar los contenedores con: docker ps -a, vemos que
+  ya el contenedor ha desaparecido ya que lo ejecutamos con la bandera: --rm
+
+PARA POSTGRESQL
+***************
+- Otra forma de conectarse a la línea de comando es escribir directamente luego de escribir el comando
+  para iniciar el contenedor los comandos de conexión a la BD. Digamos que en un solo paso, mientras
+  que lo que hicimos en MySQL fueron hacerlo en dos pasos:
+
+	> docker run -it --rm --network spring postgres:14-alpine psql -h postgres14 -U postgres
+
+	DONDE:
+		* psql, comando de postgresql para poder entrar a la línea de comandos de dicha BD
+
+  Luego de presionar enter, pedirá que ingresemos la password y finalmente estaremos conectados a postgresql.
+
+- Realizamos algunas consultas a la BD de PostgreSQL
+	> \l, para listar las BD que se tengan
+	> \c bd_dk_ms_cursos, para poder conectarnos a una BD bd_dk_ms_cursos
+	> \dt, listar las tablas de la BD a la que nos conectamos
+	> \d+ cursos, para describir la tabla cursos
+	> SELECT * FROM cursos;

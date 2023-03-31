@@ -1,0 +1,47 @@
+FORMA SIMILAR AL QUE USAMOS PARA DOCKERIZAR MYSQL
+*************************************************
+
+- Vamos a la siguiente dirección:
+	https://hub.docker.com/_/postgres
+  para obtener el comando que nos permita descargar la imagen de mysql.
+- Elegimos la imagen oficial de mysql y copiamos el comando:
+
+	docker pull postgres
+
+- Mediante cmd, descargamos la imagen en nuestra plataforma de docker:
+	
+	> docker pull postgres:14-alpine
+
+	NOTA:
+		* 14-alphine, corresponde al tag de la imagen a descargar. Es decir, descargaremos una
+  		  imagen de POSTGRESQL versión 14-alpine.
+	
+- Ahora, si hacemos un docker images, debemos observar que ya tenemos una imagen de postgresql
+  en nuestra plataforma de docker.
+
+- Creando contenedor (con usuario postgres por defecto para la bd) a partir de la imagen de posgresql:
+	
+	> docker run -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=magadiflo -e POSTGRES_DB=bd_dk_ms_cursos -d postgres:14-alpine
+
+Donde:
+	* 5532, puerto externo. Si nos queremos conectar desde nuestra máquina local hacia el contenedor de postgres. En este caso lo colocamos distinto
+		  al del puerto interno ya que en la máquina local ya tenemos ocupada el mismo valor del puerto interno.
+	* 5432, puerto interno. Si nos queremos conectar al contenedor de postgres desde nuestro contenedor de cursos, debemos usar el puerto interno 5432
+	* -e, indica que se escribirá una variable de ambiente. Cada variable de ambiente de ir precedida por la bandera -e
+	* postgres:14-alpine, indica el nombre de la imagen de postgres con su tag
+
+
+OTRA FORMA PARA PODER DOCKERIZAR
+********************************
+- Podemos ejecutar defrente el contenedor antes de descargar la imagen de Dockerhub
+
+	> docker run -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=magadiflo -e POSTGRES_DB=bd_dk_ms_cursos -d postgres:14-alpine
+
+- Como Docker verá que no tenemos dicha imagen, automáticamente se conectará a DockerHub y descargará la imagen y luego ejecutará el contenedor.
+
+
+
+
+
+
+

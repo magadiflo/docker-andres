@@ -1,0 +1,40 @@
+- Vamos a la siguiente dirección:
+	https://hub.docker.com/_/mysql
+  para obtener el comando que nos permita descargar la imagen de mysql.
+- Elegimos la imagen oficial de mysql y copiamos el comando:
+
+	docker pull mysql
+
+- Mediante cmd, descargamos la imagen en nuestra plataforma de docker:
+	
+	> docker pull mysql:8
+
+	NOTA:
+		* 8, corresponde al tag de la imagen a descargar. Es decir, descargaremos una
+  		  imagen de MySQL versión 8.
+	
+- Ahora, si hacemos un docker images, debemos observar que ya tenemos una imagen de mysql
+  en nuestra plataforma de docker.
+
+- Creando contenedor (con usuario root por defecto para la bd) a partir de la imagen de mysql:
+	
+	> docker run -d -p 3307:3306 --name mysql8 --network spring -e MYSQL_ROOT_PASSWORD=magadiflo -e MYSQL_DATABASE=bd_dk_ms_usuarios mysql:8
+
+Donde:
+	* 3307, puerto externo. Si nos queremos conectar desde nuestra máquina local hacia el contenedor de mysql. En este caso lo colocamos distinto
+		  al del puerto interno ya que en la máquina local ya tenemos ocupada el mismo valor del puerto interno.
+	* 3306, puerto interno. Si nos queremos conectar al contenedor de mysql desde nuestro contenedor de usuarios, debemos usar el puerto interno 3306
+	* -e, indica que se escribirá una variable de ambiente. Cada variable de ambiente de ir precedida por la bandera -e
+	* mysql:8, indica el nombre de la imagen de mysql con su tag
+
+
+
+
+
+
+
+
+
+
+
+

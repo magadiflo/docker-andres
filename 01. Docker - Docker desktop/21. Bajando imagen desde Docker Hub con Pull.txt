@@ -1,0 +1,61 @@
+BAJANDO IMAGEN DESDE DOCKER HUB
+*******************************
+- Antes, revisar si tenemos contenedores ejecutándose con:
+
+	> docker ps -a
+
+  Si existen, entonces los detenemos y eliminamos con:
+
+	> docker-compose down
+
+- Eliminamos todas las imágenes:
+
+	> docker image prune -a
+
+- No es necesario iniciar sesión para poder descargar la imagen. Para 
+  comprobarlo, si anteriormente habíamos iniciado sesión mediante
+  la línea de comando, ahora nos deslogueamos con:
+
+	> docker logout
+
+- Ahora sí descargamos la imagen con su nombre:
+
+	> docker pull magadiflo/usuarios
+	> docker pull magadiflo/cursos
+
+- Si listamosl as imágenes, debemos observar que ya están descargadas.
+
+- Ahora, como eliminamos todas las imagenes con docker compose, y ahroa descargaremos ejecutaremos
+  el comando run para descargar y crear los contenedores de mysql, es necesario previamente
+  crear la red "spring", sino dará un error:
+
+	> docker network create spring
+
+- Ejecutamos el comando para que descargue e inice el contenedor de mysql
+	
+	> docker run -d -p 3307:3306 --name mysql8 --network spring -e MYSQL_ROOT_PASSWORD=magadiflo -e MYSQL_DATABASE=bd_dk_ms_usuarios mysql:8
+
+	NOTA:
+		* Recordar que como no tenemos la imagen oficial de mysql:8, docker al no detectarla 
+		  en nuestra pc local, irá a docker hub y lo descargará. Posteriormente creará el contenedor
+		  para nuestra BD.
+
+- Iniciamos un contenedor para nuestra imagen descargada (magadiflo/usuarios):
+
+	> docker run --rm -d -p 8001:8001 --name dk-ms-usuarios --network spring magadiflo/usuarios:latest
+
+- Probamos en postman y debería estar funcionando correctamente.
+
+DETENIENDO LOS CONTENEDOS Y ELIMINÁNDOLOS, LUEGO ELIMINANDO LAS IMÁGENES
+************************************************************************
+- Deteniendo y eliminado los contenedores con:
+	
+	> docker stop nombre_contenedor
+
+- Eliminando contenedores
+
+	> docker rm nombre_contenedor
+
+- Eliminando las imágenes
+
+	> docker image prune -a

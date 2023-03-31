@@ -1,0 +1,53 @@
+Trabajando con argumentos en el Dockerfile
+*******************************************
+Los argumentos son variables que solo pueden usarse durante la construcción de la imagen en el Dockerfile,
+pero no en la aplicación. No es una variable de ambiente.
+
+- En el archivo Dockerfile del microservicio usuarios creamos un argumento con la palabra reservada
+  ARG. Nuestro agumento será:
+
+	ARG MS_NAME=dk-ms-usuarios
+
+	DONDE:
+		* ARG, nos permite definir argumentos
+		* MS_NAME, el nombre que le daremos a nuestra variable
+		* dk-ms-usuarios, el valor que tendrá nuestra variable
+
+- Para utilizar nuestro argumento debemos usar el $ seguido de nuestro argumento
+	
+	WORKDIR /app/$MS_NAME
+
+	DONDE:
+		* Lo que hacemos aquí es reemplazar el valor harckodeado por nuestro argumento.
+		  Eso lo hacemos en todas las coincidencias, pero siempre dentro de nuestro ámbito
+ 		  del FROM, ya que si vemos el Dockerfile de usuarios hay dos FROM. Nuestra argumento
+		  MS_NAME solo funcionará en el ámbito donde lo hemos declarado (en el primer FROM).
+		* Si necesitamos el args MS_NAME en el segundo ámbito, lo podríamos volver a declarar
+		  y seguir usando o una mejor solución sería definir de forma global. (Ver sección de abajo)
+
+- Ya con los argumentos definidos, generamos nuestra imagen:
+	
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+Definiendo argumento de forma global
+*************************************
+- En nuestro archivo Dockerfile tenemos dos ámbitos, uno que es con el FROM openjdk:17-jdk-alpine as builder, 
+  y el otro con el FROM openjdk:17-jdk-alpine. En ambos casos necesitamos usar un mismo argumento para
+  reutilizar. Para lograr usar el mismo argumento en ambos ámbitos necesitamos declarar el argumento de manera
+  global.
+- Antes del primer FROM openjdk:17-jdk-alpine as builder, declaramos el argumento y su valor, luego,
+  después de él, lo volvemos a llamar pero ya sin el valor. Lo mismo haríamos en el segundo ámbito, 
+  es decir solo volver a llamar al argumento:
+	
+	ARG MS_NAME=dk-ms-usuarios
+
+	FROM openjdk:17-jdk-alpine as builder
+	
+	ARG MS_NAME
+
+	-----------------
+	FROM openjdk:17-jdk-alpine
+
+	ARG MS_NAME
+
+- De esa manera se reutiliza el argumento después de cada FROM

@@ -1,0 +1,105 @@
+Cambio valor del puerto definido en el .properties por una variable de ambiente (ENV)
+************************************************************************************
+- En el microservicio usuarios, cambiamos la propiedad
+	
+	server.port=8001
+
+  por la siguiente 
+	
+	server.port=${PORT:8001}
+
+  Donde PORT, será nuestra variable de ambiente, mientras que el :8001 será el 
+  valor por defecto, entonces ${PORT:8001} significa que tome el valor que tiene
+  la variable PORT, pero si esa variable no existe entonces coja su valor por defecto
+  que es 8001
+
+- Ahora, definimos nuestra variable de ambiente en el archivo Dockerfile con un valor
+  por defecto, ¡OJO! es un valor por defecto. 
+  Es recomendable que el puerto esté lo más abajo posible, después del COPY:
+	
+	ENV PORT 8000
+
+  Recordar que el puerto hace referencia al puerto interno.
+
+- También modificaremos el EXPOSE, por nuestra variable de ambiente. Usamos el $ 
+  para decirle que es una variable de ambiente.
+
+	EXPOSE $PORT
+
+- Ahora, para probar que hemos puesto nuestra variable de ambiente correctamente, 
+  construimos nuevamente la imagen y generamos su contenedor
+	
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+	> docker run -p 8001:8000 -d --rm --name dk-ms-usuarios --network spring usuarios
+
+  NOTA:
+	* Ahora tenemos estos puertos: 8001:8000, eso significa que el 8001
+	  es el puerto externo, para que desde afuera del contenedor nos comuniquemos con él.
+ 	  Por ejemplo desde nuestra máquina local.
+
+	* Por otro lado el 8000, es el puerto interno, el mismo valor que le definimos a
+ 	  nuestra variable de entorno. Este puerto es usado internamente por la aplicación. Ahora,
+ 	  recordar que nuestro microservicio cursos está tratando de comunicarse a nuestro microservicio
+        usuarios a través del puerto 8001 (como estaba inicialmente) pero ahora que lo cambiamos a 8000,
+	  esa comunicación va a fallar. Tan solo lo cambiamos para ver cómo es que funcionan las variables
+        de ambiente, luego lo dejaremos como estaba.
+	  
+- Para ver si la aplicación se inició en el puerto 8080 que le hemos definido en la variable de ambiente
+  podemos ver el log
+	
+	> docker logs dk-ms-usuarios
+
+Sobreescribiendo el valor de la variable de ambiente PORT definido en el Dockerfile
+Mediante Línea de Comando
+***********************************************************************************
+- Actualmente el valor por defecto de la variable de ambiente PORT definido en el Dockerfile es 8000.
+- Podemos cambiar dicho valor al ejecutar un nuevo contenedor, de esa manera le decimos que no tome por 
+  defecto el valor por defecto definido en el Dockerfile sino el que le estamos pasando por la 
+  línea de comandos. Cuando ejecutamos un contenedor no estamos limitados al valor codificado de forma 
+  rígida en el Dockerfile (valor por defecto) sino más bien podemos cambiar dicho valor cuando ejecutamos
+  el contendor con el docker run pero usando la bandera -e o --env
+
+	> docker run -p 8001:8090 --env PORT=8090 -d --rm --name dk-ms-usuarios --network spring usuarios
+	
+	NOTA:
+		* --env, bandera para definir una variable de ambiente
+		* PORT, es la variable de ambiente definido en el Dockerfile
+		* PORT=8090, el valor 8090 es el valor que tomará nuestra variable de ambiente.
+		* 8001:8090, el valor 8090 debe coincidir con el mismo valor que definimos en 
+		  la variable de ambiente PORT de esta misma línea de comandos
+
+- Para ver si la aplicación se inició en el nuevo puerto definido mediante la línea de comandos,
+  vemos el logs
+
+	> docker logs dk-ms-usuarios
+
+
+Usando un archivo .env de configuración para definir nuestras variables de ambiente
+***********************************************************************************
+- En la raíz del microservicio dk-ms-usuarios creamos el archivo .env
+- Agregamos la variable con su valor: PORT=8091 (le colocamos otro valor para ver que ha cambiado)
+- Cuando ejecutemos el contenedor debemos especificar la bandera --env-file y la ruta del archivo .env 
+  a partir de la ubicación donde nos encontremos.
+
+	> docker run -p 8001:8091 --env-file .\dk-ms-usuarios\.env -d --rm --name dk-ms-usuarios --network spring usuarios
+
+	NOTA: 
+		* --env-file, bandera que indica que haremos referencia a un archivo
+		* .\dk-ms-usuarios\.env, ubicación del archivo .env a partir del proyecto raíz /curso-kubernetes
+
+- Finalmente, para dejar todo funcionando, ya que nuestro otro ms de cursos se comunica con nuestro
+  ms de usuarios a través del puerto 8001, es que dejaremos el archivo .env en dicho valor.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

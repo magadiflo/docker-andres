@@ -1,0 +1,38 @@
+GENERANDO ARCHIVO .JAR
+---------------------------------------------------------------------------------------------
+- Antes de dockerizar es necesario generar el archivo .jar, es decir la aplicación
+  compilada de maven.
+- Para eso mediante cmd nos posicionamos en la ruta de cada microservicio:
+	Ejemplo:
+	M:\PROGRAMACION\DESARROLLO_JAVA_SPRING\INTELLIJ_IDEA\16.udemy_andres_guzman\03.guia_completa_docker_y_kubernetes_spring_boot_2023\curso-kubernetes\dk-ms-cursos
+****************************
+IMPORTANTE: 
+- Antes de ejecutar el comando para generar el .jar debemos asegurarnos de que los archivos .properties
+  de nuestros microservicios estén codificados en UTF-8, sino nos mostrará un error y no se podrá generar el .jar.
+- Para eso, presionamos ctrl + alt + s (settings), vamos luego a la opción de: Editor/File Encodings y en la parte
+  derecha cambiamos dos opciones a UTF-8:
+	Global Encoding: UTF-8
+	Default encoding for properties files: UTF-8
+- Damos aplicar y ok.
+- Luego, vamos a los archivos properties y verificamos que no tengamos caracteres extraños,
+  sobre todo cuando hemos usado comentarios con tíldes, si encontramos alguno, simplemente
+  eliminarlo y colocarlo con tílde (según sea el caso), ya que ahora el archivo acepta caracteres del tipo UTF-8
+****************************
+- Escribimos el siguiente comando (para windows es con extensión .cmd, mientras para usuarios linux mac es sin extensión, aunque para windows también podría ser
+  sin extensión, funciona de todas maneras)
+	> .\mvnw.cmd clean package
+		Donde: 
+			- clean, elimina o limpia todo el empaquetado que tengamos en el directorio /target
+- Al finalizar la compilación, vemos que en el directorio /target del microservicio dk-ms-usuarios, el .jar generado: 
+	dk-ms-usuarios-0.0.1-SNAPSHOT.jar
+- El .jar generado es el que al final vamos a ejecutar en producción.
+
+
+EJECUTANDO .JAR DESDE CMD
+---------------------------------------------------------------------------------------------
+- Supongamos que el .jar lo hemos llevado a una máquina remota y lo queremos levantar, queremos que se ejecute,
+  que esté ya en funcionamiento. Para eso nos posicionamos mediante cmd en el directorio donde pusimos el .jar
+  y ejecutamos el siguiente comando:
+	> java -jar dk-ms-usuarios-0.0.1-SNAPSHOT.jar
+- Ahora se observa en el cmd que la aplicación está corriendo.
+- La idea es realizar esto mismo con docker, es decir dockerizar la aplicación, configurar un contenedor mediante una imagen, etc.

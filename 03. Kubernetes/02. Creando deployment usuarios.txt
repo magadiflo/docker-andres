@@ -1,0 +1,39 @@
+CREANDO DEPLOYMENT USUARIOS
+---------------------------
+- Creamos el deployment de usuarios con el siguiente comando:
+	> kubectl create deployment dk-ms-usuarios --image=magadiflo/usuarios:latest --port=8001
+
+	NOTA:
+		* Recordar que la imagen lo descargará de docker hub (magadiflo/usuarios:latest)
+
+- Revisamos que se haya creado nuestro deployment:
+	> kubectl get deployments
+
+	NOTA:
+		* Esperar que se inicialice el microservicio para que la opción de READY esté en 1/1
+
+CREANDO EL SERVICIO DE USUARIOS PARA LA COMUNICACIÓN, TRÁFICO Y LOADBALANCER
+----------------------------------------------------------------------------
+- Ejecutamos el siguiente comando:
+	 > kubectl expose deployment dk-ms-usuarios --port=8001 --type=LoadBalancer
+
+	DONE:
+		* LoadBalancer, necesitamos exponer el servicio de forma externa, aunque también
+		  es para la comunicación interna entre pods
+
+- Verificamos:
+	> kubectl get services
+
+- Observamos que no muestra en el EXTERNAL-IP de nuestro servicio creado. Para poder ver la IP
+  externa ejecutamos:
+	> minikube service dk-ms-usuarios --url
+
+	DONDE:
+
+		* --url, Para poder obter la ip del cluster
+
+- Como resultado del comando anterior nos mostrará:
+	http://172.25.191.228:30986
+
+- Abrimos postman y usamos dicha url para poder accer a la lista de usuarios:
+	> http://172.25.191.228:30986/api/v1/usuarios

@@ -1,0 +1,172 @@
+PANORAMA ACTUAL
+----------------
+Actualmente estamos haciendo algunos procesos por separado: Generamos el .jar con el .\mvnw.cmd clean package
+de forma separada y luego tenemos que generar la imagen, es decir estamos haciendo dos cosas:
+	Generar la imagen, 
+	Construir la imagen copiando el .jar
+todo esto lo podríamos hacer en un único proceso cuando generamos la imagen, en vez de copiar el .jar
+poríamos compilarlo con el comando .\mvnw.cmd...., pero para eso necesitamos copiar parte de nuestro 
+proyecto, de nuestro microservicio, pero tendremos un problema (solucionable), nuestro microservicio
+usuario su pom.xml depende de un pom padre. Lo que haremos será copiar ambos pom.xml.
+
+MODIFICANDO Dockerfile
+-----------------------
+- Modificar el WORKDIR, como ahora tendremos un pom.xml del padre y otro del ms usuarios
+	WORKDIR /app/dk-ms-usuarios
+  En el /app colocaremos el pom.xml del padre
+  En el /app/dk-ms-usuarios colocaremos el pom.xml de dicho microservicio
+- ¡Importante! cuando usemos el cmd ya no nos posicionaremos en el microservicio usuarios para ejecutar
+  el Dockerfile, sino más bien en el proyecto padre curso-kubernetes.
+- La siguiente modificación la realizaremos en el:
+	COPY ./pom.xml /app
+  Como ahora estamos posicionados en el proyecto padre, le estamos diciendo que copie el pom.xml del 
+  padre al directorio /app
+- La siguiente modificación es copiar los archivos del directorio ./dk-ms-usuarios al directorio de trabajo
+  definido en la imagen /app/dk-ms-usuarios (que en nuestro caso el . representa dicho directorio de trabajo)
+	COPY ./dk-ms-usuarios .
+- Hasta este punto tenemos en el WORKDIR /app, el pom.xml padre, mientras que 
+  en el /app/dk-ms-usuarios, tenemos todos los archivos de nuestro microservicio dk-ms-usuarios.
+- El siguiente paso sería compilar el proyecto (RUN .). Recordar que el punto (.) hace referencia 
+  al directorio de trabajo /app/dk-ms-usuarios y dentro de ese directorio hasta este punto ya tenemos
+  todos los archivos de nuestro microservicio incluido el pom.xml, el mvnw (de maven), etc.. entonces
+  podemos usar ese archivo de maven para compilar el proyecto como lo hacíamos normalmente con nuestro cmd:
+	RUN ./mvnw clean package -DskipTests
+  NOTA: 
+	RUN es una instrucción Dockerfile para ejecutar comandos. RUN se ejecuta cuando se construye imágenes,
+      mientras que ENTRYPOINT se ejecuta cuando se crea contenedores.
+- El .jar se generará en la siguiente ruta:
+	/app/dk-ms-usuarios/target/dk-ms-usuarios-0.0.1-SNAPSHOT.jar
+  Por lo tanto, es necesario modificar el ENTYPOINT agregandole el ./target
+	ENTRYPOINT ["java", "-jar", "./target/dk-ms-usuarios-0.0.1-SNAPSHOT.jar"]
+
+CREANDO IMAGEN A PARTIR DEL DOCKERFILE MODIFICADO
+-------------------------------------------------
+- Mediante cmd debemos ubicarnos en el proyecto padre curso-kubernetes, esto porque dentro del Dockerfile
+  dijimos que haga un COPY ./pom.xml (o sea del pom padre), y dicho archivo precisamente está en el proyecto
+  padre, así que ahora el proyecto padre será nuestra ruta raíz.
+- Ejecutaremos la siguiente instrucción:
+
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+	* ¿Qué significa el punto (.)?
+	  Indica que estamos posicionados en la raíz a partir del cual empezaremos a copiar los archivos
+      * -f, con esto indicamos dónde está el archivo Dockerfile
+
+OPTIMIZANDO DOCKERFILE PARTE 2 - AÑADIENDO NUEVAS CAPAS
+--------------------------------------------------------
+CONTEXTO:
+	Cada vez que se hace un cambio en el código, descarga todas las dependencias,
+ 	copia la carpeta completa de nuestro código fuente, etc.
+SOLUCIÓN:
+	Haremos que no esté descargando las dependencias en cada cambio, sino que lo tome de
+	la caché, y tan solo el cambio que hicimos en el código fuente sea subido para su
+	posterior compilación.
+
+PASO 01 - Copiando maven del proyecto
+- Le decimos que copia el .mvn del proyecto dk-ms-usuarios y lo pegue en el directorio
+  WORKDIR /app/dk-ms-usuarios (./ del código de abajo es representado por el WORKDIR)
+	COPY ./dk-ms-usuarios/.mvn ./.mvn
+
+PASO 02 
+- Copiamos el wrapper de maven, el de sin extensión que es de Linux, en el WORKDIR
+  COPY ./dk-ms-usuarios/mvnw .
+
+PASO 03 
+- Copiamos el pom.xml del microservicio dk-ms-usuarios al WORKDIR
+  COPY ./dk-ms-usuarios/pom.xml .
+
+
+PASO 04
+- Le decimos que se salte el test y que no compile el test
+
+	RUN ./mvnw clean package -Dmaven.test.skip -Dmaven.main.skip -Dspring-boot.repackage.skip && rm -r ./target
+
+	* -Dmaven.test.skip, que no ejecute ni compile el test
+	* -Dmaven.main.skip, que no ejecute nada relacionado al código fuente
+	* -Dspring-boot.repackage.skip, que empaquete el proyecto sin las pruebas unitarias
+	* && rm -r ./target, y que elimine la carpeta target
+
+- Alternativa a toda la instrucción mostrada en el paso 04 sería:
+	
+	RUN ./mvnw dependecy:go-offline
+  Pero según el instructor, es mejor toda esa línea de instrucción enorme del paso 04
+
+PASO 05
+- Le decimos que copie la carpeta del código fuente de nuestro microservicio dk-ms-usuarios al WORKDIR/src,
+  sabiendo que WORKDIR es /app/dk-ms-usuarios
+
+	COPY ./dk-ms-usuarios/src ./src
+
+OPTIMIZANDO DOCKERFILE CON COMPILACIONES DE VARIAS ETAPAS O MULTI-STAGE BUILDS
+------------------------------------------------------------------------------
+Optimizaremos la imagen generada para que pese lo menos posible. 
+Haremos dos construcciones (builds) basadas en el openjdk:17-jdk-alpine, al primero le llamaremos
+builder que nos permitirá construir, copiar el pom.xml, copiar, compilar el proyecto, etc..
+y y la seguna también usando el openjdk:17-jdk-alpine para a partir de la primera 
+copiar solo el .jar generado en dicha primera imagen.
+
+
+PASO 01. 
+- Cambiamos la imagen de java por una más liviana y le asignamos un nombre, es este 
+  caso se le asignó el nombre builder:
+
+	FROM openjdk:17-jdk-alpine as builder
+
+
+PASO 02.
+- Creamos un segundo from con el mismo jdk, creamos un WORKDIR llamado /app y le
+  decimos que de la imagen anterior llamada builder copie el .jar del target y lo coloque
+  en este WORKDIR:
+
+	FROM openjdk:17-jdk-alpine
+
+	WORKDIR /app
+
+	COPY --from=builder /app/dk-ms-usuarios/target/dk-ms-usuarios-0.0.1-SNAPSHOT.jar .
+
+- Como ahora el directorio raíz es ./app entonces el comando que ejecuta el .jar 
+  debe apuntar a dicho directorio y ya no a /target
+	
+	ENTRYPOINT ["java", "-jar", "dk-ms-usuarios-0.0.1-SNAPSHOT.jar"]
+
+CONCLUSIÓN:
+	La imagen se construirá con el último FROM del Dockerfile
+
+PASO 03.
+- Creamos la imagen con el siguiente comando:
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+PASO 04.
+- Cremos un contenedor a partir de la imagen:
+	> docker run -p 8001:8001 usuarios
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	

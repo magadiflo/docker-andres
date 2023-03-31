@@ -1,0 +1,59 @@
+Docker Volumes: La solución al problema de persistencia de datos
+****************************************************************
+- Para partir de cero debemos eliminar todos los contenedores que tengamos, tanto
+  los de los microservicios como los de la BD.
+	> docker stop dk-ms-usuarios
+	> docker stop dk-ms-cursos
+	> docker stop mysql8
+	> docker stop postgres14
+	> docker rm mysql8
+	> docker rm postgres14
+
+- Primero crearemos los contenedores de las BD:
+
+	> docker run -d -p 3307:3306 --name mysql8 --network spring -e MYSQL_ROOT_PASSWORD=magadiflo -e MYSQL_DATABASE=bd_dk_ms_usuarios -v data-mysql:/var/lib/mysql --restart=always mysql:8
+
+	DONDE:
+		* -v, indica que se configurará un volumen
+		* data-mysql, es el nombre que le asignaremos al volumen
+		* /var/lib/mysql, la ruta donde se guardan los datos de mysql en el sistema operativo del contenedor. Esto hace que
+  			los datos de dicha carpeta (ruta) se guarden en nuestra máquina local, en algún directorio de nuestro host, en alguna
+  			carpeta que es desconocido, pero van a quedar guardado de forma automática se van a mantener fuera del contenedor, tan 
+  			solo con esa configuración.
+		* --restart=always, que reinicie nuestro contenedor cada vez que se detenga docker o ocurra algún problema, siempre de manera automática.
+   			Por ejemplo, cuando reiniciemos nuestra pc local se van a detener nuestros contenedores, pero cuando se inicie Docker
+  			se van a volver a levantar de manera automática.
+			Es opcional, porque fácilmente lo podemos levantar manualmente con docker start <nombre del contenedor
+
+
+	> docker run -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=magadiflo -e POSTGRES_DB=bd_dk_ms_cursos -d -v data-postgres:/var/lib/postgresql/data --restart=always postgres:14-alpine
+
+
+- Ahora crearemos los contenedores de los microservicios usuarios y cursos.
+- Hasta este punto ya tenemos 4 contenedores levantados, hacemos pruebas desde postman y todo debe estar funcioando correctamente.
+
+Eliminando Contenedores de BD
+*****************************
+- Primero detendremos los contenedores de las BD y luego los eliminaremos. 
+
+	> docker stop mysql8
+	> docker stop postgres14
+	> docker rm mysql8
+	> docker rm postgres14
+
+- La pregunta ¿Se habrán eliminado los datos que teníamos en la BD? o, como ahora trabajamos 
+  con volumes, ¿estos estarán persistidos es nuestra pc local y cuando creemos nuevamente los
+  contenedores de las BD, ellos tomen esa bd persistida?
+
+- Creamos nuevamente los contenedores de las BD:
+	> docker run -d -p 3307:3306 --name mysql8 --network spring -e MYSQL_ROOT_PASSWORD=magadiflo -e MYSQL_DATABASE=bd_dk_ms_usuarios -v data-mysql:/var/lib/mysql --restart=always mysql:8
+	> docker run -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=magadiflo -e POSTGRES_DB=bd_dk_ms_cursos -d -v data-postgres:/var/lib/postgresql/data --restart=always postgres:14-alpine
+
+- Probamos desde Postman y como resultado debemos seguir viendo los datos que inicialmente habíamos guardado. 
+  En conclusión, los datos aún siguen persistidos a pesar de que eliminamos los contenedores de las BD y esto es 
+  gracias que estamos trabajando con volúmenes ya que los datos se mantienen o persisten en nuestra máquina local.
+  Cuando levantamos el contenedor de las BD, irá a leer la BD que tengamos almacenado en nuestra máquina local y 
+  no dentro del contenedor.
+
+- Listar los volúmenes
+	>  docker volume ls

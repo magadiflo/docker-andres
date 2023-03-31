@@ -1,0 +1,74 @@
+CONTEXTO:
+¿Qué sucede si por alguna razón los contenedores de las Bases de Datos, tanto de MySQL y de PostgreSQL se eliminan?
+
+Pues, cuando se eliminan prácticamente se elimina todo el contendor, y lo que internamente tenga, 
+por lo tanto, se perderían los datos. 
+
+Aunque, es poco común que se eliminen contenedores de BDs, pero podría ocurrir y es muy riesgozo sobre todo 
+cuando es una BD de producción.
+
+SOLUCIÓN:
+Debemos aislar o quitar todos los datos de las bases de datos que están dentro del contenedor (tanto MySQL como
+PostgreSQL manejan su propia carpeta donde guardan los datos de las BD) y llevarlo a una máquina host (local)
+para que quede más seguro allí, de tal manera que si se eliminan por accidente este contenedor de BD, los
+datos sigan persistiendo.
+
+CONTENEDORES DE BD
+******************
+- Verificamos si están ejecutándose nuestros dos contenedores de BD con el comando:
+	
+	> docker ps -a
+
+- En caso estén detenidos (exited) los reiniciamos:
+	
+	> docker start postgres14
+	> docker start mysql8
+
+CONTENEDORES DE LOS MICROSERVICIOS
+**********************************
+- Como colocamos el comando --rm para ejecutar nuestros contenedores de microservicios, éstos se eliminarán
+  cada vez que los detenemos o cerramos Docker. Por lo tanto, queda crear nuevamente los contenedores para
+  los dos microservicios:
+
+	> docker run -p 8001:8001 -d --rm --name dk-ms-usuarios --network spring usuarios
+	> docker run -p 8002:8002 -d --rm --name dk-ms-cursos --network spring cursos
+
+RESULTADO DESDE POSTMAN
+***********************
+- Hacemos las peticiones desde postman y vemos que los datos aún están guardados ya que los contenedores de BD
+  solo estaban detenidos mas no eliminados. En conclusión, todo está funcionando bien.
+
+
+************************************************************************************
+CASO ELIMINANDO CONTENEDORES DE BD Y VOLVIÉNDOLOS A CREAR
+************************************************************************************
+- Detenemos los dos contenedores de las BD
+	> docker stop mysql8
+	> docker stop postgres14
+
+- Eliminamos los dos contenedores:
+	> docker rm mysql8
+	> docker rm postgres14
+
+- Volvemos a crear los dos contenedores:
+	> docker run -d -p 3307:3306 --name mysql8 --network spring -e MYSQL_ROOT_PASSWORD=magadiflo -e MYSQL_DATABASE=bd_dk_ms_usuarios mysql:8
+	> docker run -d -p 5532:5432 --name postgres14 --network spring -e POSTGRES_PASSWORD=magadiflo -e POSTGRES_DB=bd_dk_ms_cursos postgres:14-alpine
+
+- Listamos todos los contenedores con
+	> docker ps -a
+
+  Vemos que tenemos levantados los 4 contenedores: 2 de las BD y 2 de los microservicios.
+
+- Ahora, si hacemos pruebas desde Postman nos mostrará un error internal ya que nuestros contenedores de microservicios ya
+  están levantados, y nosotros volvimos a crear los contenedores de BD, significa que con esa nueva creación de los contenedores
+  de las BD, la tablas correspondientes a cada microservicio no estarán. ¿Solución? detener los contenedores de los microservicios
+  y volver a crearlos para que así se vuelvan a crear la estructura de tablas en las BD:
+
+	> docker stop dk-ms-usuarios
+	> docker stop dk-ms-cursos
+
+	> docker run -p 8001:8001 -d --rm --name dk-ms-usuarios --network spring usuarios
+	> docker run -p 8002:8002 -d --rm --name dk-ms-cursos --network spring cursos
+
+- Ahora, si hacemos pruebas desde postman, estará funcionando bien, pero ya los datos no estarán puesto que hemos eliminado los contenedores
+  de las BDs y los hemos vuelto a crear.

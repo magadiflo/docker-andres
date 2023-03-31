@@ -1,0 +1,37 @@
+¿Qué es DockerHub?
+---------------------------------------------------
+- DockerHub es un repositorio de imágenes en la nube, pero de Docker.
+	https://hub.docker.com/
+- Podemos buscar imágenes oficiales que ya están publicadas, por ejemplo de mysql, java.
+  Para el caso de java usaremos OpenJDK.
+- Buscamos OpenJDK, ingresamos al resultado obtenido.
+- Vamos al tags y filtramos por la versión que queremos, en nuestro
+  caso sería la versión 17 de java. 
+- En los resultados del filtrado elegiremos la versión: 17.0.2 ya que es similar a la versión
+  que yo tengo en mi pc y con el cual se creó la aplicación (17.0.4.1)
+
+Creando archivo Dockerfile
+---------------------------------------------------
+- Desde el Intellij IDEA vamos al microservicio usuarios y creamos en la raíz de dicho
+  microservicio un archivo sin extensión llamado: Dockerfile.
+- Agregamos el siguiente código para generar un archivo dockerfile para nuestra imagen que 
+  se está pasando (openjdk:17.0.2), que es una imagen oficial del openjdk con un 
+  sistema operativo linux (IMPORTANTE: por defecto viene en un sistema operativo linux, es más liviano)
+	FROM openjdk:17.0.2
+- Lo segundo sería crear nuestra carpeta de trabajo dentro de este sistema operativo:
+	WORKDIR /app
+  Lo que estamos haciendo es definir un directorio de trabajo llamado /app, donde colocaremos nuestro .jar,
+  es decir, un directorio que estará dentro de nuestra imagen.
+- Como siguiente paso es copiar el .jar compilado de nuestra aplicación al directorio /app creado en nuestra imagen:
+	COPY ./target/dk-ms-usuarios-0.0.1-SNAPSHOT.jar .
+  Hay tres partes:
+	PRIMERO: COPY, copiará el .jar
+	SEGUNDO: ./target/dk-ms-usuarios-0.0.1-SNAPSHOT.jar, la ruta del .jar a partir de la ubicación del Dockerfile
+	TERCERO: ., el punto indica el directorio de destino, es el directorio raíz, es decir el directorio que 
+  			definimos para alojar nuestro .jar, es nuestro directorio /app. Otra forma, es en vez de colocar el
+			punto (.) colocar directamente el /app.
+- El siguiente paso es exponer el puerto donde se ejecutará nuestra aplicación:
+	EXPOSE 8001
+- Como paso siguiente es definir un punto de entrada, en nuestro caso escribiremos el 
+  comando para que se ejecute nuestro .jar
+	ENTRYPOINT ["java", "-jar", "dk-ms-usuarios-0.0.1-SNAPSHOT.jar"]

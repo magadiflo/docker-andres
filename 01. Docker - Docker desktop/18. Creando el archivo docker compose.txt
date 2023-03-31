@@ -1,0 +1,302 @@
+CREANDO EL ARCHIVO DOCKER COMPOSE A PARTIR DE IMÁGENES YA CREADAS
+******************************************************************
+- En la raíz del proyecto general /curso-kubernetes, creamos el archivo con extensión (yml o yaml):
+	docker-compose.yml 		<----- Debe tener tal cual ese nombre
+  
+- Siempre se iniciará con 
+	
+	version: "3.9"
+
+	DONDE:
+		* La versión indica, la versión que usaremos en Docker compose para usar ciertas
+		  características, para usar la especificación de Docker compose. Esta versión tiene
+		  un efecto en las características o funcionalidades que vamos a poder utilizar
+		  en este archivo de composición. Por lo tanto, en versión colocamos la versión
+		  que vamos a usar para que Docker compose sepa qué características van a estar
+		  disponibles.
+		* Para ver la versión actual, podemos revisar el siguiente enlace:
+			https://docs.docker.com/compose/compose-file/compose-file-v3/
+
+- Luego definiremos el nombre de los contenedores a crear (--name), o lo que en docker compose
+  se llaman servicios, para posterioremente agregarle propiedades a dichos contenedores.
+  Por ahora solo los definimos de la siguiente manera:
+
+	services:
+  	  mysql8:
+
+  	  postgres14:
+
+  	  dk-ms-usuarios:
+
+  	  dk-ms-cursos:
+
+
+DEFINIENDO CONTENEDORES DE BBDD MYSQL Y POSTGRESQL
+***************************************************
+- Definimos los contenedores para nuestras dos bases de datos, la configuración serán las mismas que usamos
+  anteriormente mediante la línea de comandos:
+---------------------------------------------------------
+services:
+  mysql8:
+    image: mysql:8
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: magadiflo
+      MYSQL_DATABASE: bd_dk_ms_usuarios
+    volumes:
+      - data-mysql:/var/lib/mysql
+    restart: always
+    networks:
+      - spring
+  postgres14:
+    image: postgres:14-alpine
+    ports:
+      - "5532:5432"
+    environment:
+      POSTGRES_PASSWORD: magadiflo
+      POSTGRES_DB: bd_dk_ms_cursos
+    volumes:
+      - data-postgres:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - spring
+
+volumes:
+  data-mysql:
+  data-postgres:
+networks:
+    spring:
+---------------------------------------------------------
+
+	NOTA:	
+
+	* networks, configurar la red en docker compose está demás (es opcional) ya que por defecto, todos los servicios
+	  o sea, los contenedores que están definido dentro de este archivo pertenecerán a la misma red creada por 
+	  Docker Compose. Podemos dejar explícita nuestra propia red, no hay problema.
+
+	* volumes y networks, se deben definir en la parte inferior en el mismo nivel de services para que luego 
+        se usen en los contenedores que los necesiten.
+
+AÑADIENDO CONTENEDORES DE MICROSERVICIOS
+****************************************
+- Definiendo los contenedores para nuestros microservicios:
+---------------------------------------------------------
+  dk-ms-usuarios:
+    image: usuarios:latest
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./dk-ms-usuarios/.env
+    networks:
+      - spring
+    depends_on:
+      - mysql8
+    restart: always
+  dk-ms-cursos:
+    image: cursos:latest
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./dk-ms-cursos/.env
+    networks:
+      - spring
+    depends_on:
+      - postgres14
+	- dk-ms-usuarios
+    restart: always
+---------------------------------------------------------
+
+	NOTA:
+
+	* usuarios:latest, es el nombre de la imagen que ya tenemos generado, el "latest" es el tag por defecto,
+  	  es decir, si quisiéramos solo colocaríamos el nombre de la imagen "usuarios" sin el latest.
+
+	* depends_on, le indicamos que antes de que levante nuestro contenedor actual, primero debe estar levantado
+  	  el contenedor que coloquemos dentro de este depends_on. En nuestro caso, antes de que nuestro contenedor 
+  	  dk-ms-usuarios se levante, primero debe estar levantado el contenedor mysql8.
+
+	* restart: always, es importante que coloquemos esta propiedad ya que puede ocurrir el caso de que nuestro
+	  contenedor de los microservicios se inicien pero aún la BD del cual depende, si bien es cierto ya se ha 
+	  creado, pero aún no está escuchando los puertos (no está 100% levantado), así que lo
+	  reinicamos tantas veces hasta que se ejecute correctamente la aplicación.
+
+
+EJECUTANDO TODO CON DOCKER-COMPOSE UP Y DOWN PARA DETENER Y ELIMINAR TODO
+**************************************************************************
+- Primero asegurarnos de que no tengamos ningún contenedor ya que partiremos desde cero,
+  ejecutando nuestrao archivo docker-compose.yml
+
+	> docker ps -a
+
+- Ejecutando nuestro docker compose con el siguiente comando:
+
+	> docker-compose up -d
+
+	DONDE:
+		* up, para levantar nuestro archivo docker-compose
+		* -d, que se ejecute en modo dettached, similar a como lo hemos venido trabajando desde un inicio
+
+- Al finalizar la ejecución se nos muestra el siguiente resultado en consola:
+	
+	[+] Running 7/7
+	- Network curso-kubernetes_spring              Created                                                                                                                         	0.0s  - Volume "curso-kubernetes_data-mysql"         Created                                                                                                                         	0.0s  - Volume "curso-kubernetes_data-postgres"      Created                                                                                                                         	0.0s  - Container curso-kubernetes-postgres14-1      Started                                                                                                                         	0.7s  - Container curso-kubernetes-mysql8-1          Started                                                                                                                         	0.7s  - Container curso-kubernetes-dk-ms-usuarios-1  Started                                                                                                                         	1.2s  - Container curso-kubernetes-dk-ms-cursos-1    Started
+
+	NOTA:
+		* Observamos que a nuestra red, volumen y contenedores le agrega
+ 		  un prefijo: curso-kubernates-....
+
+		* Todo lo que sea redes y comunicaciones estará bien ya que tomará 
+		  el valor que le establecimos dentro del docker-compose.yml. Me estoy
+		  refiriendo al nombre de los contenedores, tanto de cursos: dk-ms-cursos,
+		  de usuarios: dk-ms-usuarios y de las bases de datos. Recordemos que 
+		  los microservicios cursos y usuarios junto a las BD se comunican mediante
+		  sus hostname y esos nombres serán los que definimos dentro del docker-compose.yml.
+		  Esta aclaración la hago porque cuando ejecutamos el docker-compose, concatena un
+		  nombre a los que definimos internamente dentro del archivo.
+
+- Revisamos si están levantados los contenedores:
+
+	> docker ps -a
+
+- Revisamos el log de usuarios. Recordar que ahora cuando listamos los contenedores nos muestra
+  en el names el nombre que docker compose concatenó al que establecimos. 
+	
+	> docker logs  curso-kubernetes-dk-ms-usuarios-1
+
+	NOTA:
+		* Posiblemente encontremos muchos errores en el log, y está bien ya que como se mencionó
+		  en la parte superior, como nuestro contenedor depende de una BD, esta BD puede que no esté
+		  corriendo al 100%, así que la aplicación se va a reiniciar tantas veces hasta que se 
+		  conecte a la BD cuano esté al 100%.
+
+		* ¡OJO!, vemos que a parte de los errores, nos muestra que ha creado nuevamente las tablas,
+		  pero se supone que no debería crear ya que esamos usando volúmenes, es decir debería levantar
+		  con los datos establecidos en dichos volúmenes. ¡Luego lo revisamos!
+
+- Revisamos los volúmenes:
+
+	> docker volume ls
+
+	NOTA:
+		* Nos muestra que ha creado dos volúmenes nuevos:
+			curso-kubernetes_data-mysql
+			curso-kubernetes_data-postgres
+		* También están en la lista los volúmenes que veníamos trabajando antes:
+			data-mysql
+			data-postgres
+
+		* Aquí está la causa del por qué ha creado nuevamente las tablas, ya que 
+		  creó nuevos volúmenes y no usó el que teníamos ya creado.
+
+
+ELIMINANDO CONTENEDORES CREADOS CON DOCKER-COMPOSE
+***************************************************
+- Como se observó, se han creado los volúmenes, redes, etc.. con un nombre concatenado 
+  por docker-compose, eso hizo, por ejemplo, que nuestra aplicación cree nuevamente las 
+  tablas ya que docker compose creó nuevos volúmenes.
+
+- Primero ejecutameos el siguiente comando. Este comando detendrá los contenedores y
+  también los eliminará.
+
+	> docker-compose down
+
+- Listamos los volúmenes que tenemos:
+
+	> docker volume ls
+
+- Eliminaremos los volúmenes que creó docker-compose. Si volvemos a listar
+  los volúmenes veremos que aquellos que creó fueron elimiinados.
+	
+	> docker-compose down -v
+
+	¡IMPORTANTE!
+		* Tener mucho cuidado con este comando ya que el -v eliminará los volumenes
+ 		  creados, usados o definidos en el docker-compose.yml
+			
+
+
+MANTENIENDO LOS MISMOS NOMBRES DEFINIDOS EN NUESTROS CONTENEDORES
+*****************************************************************
+- Para evitar que docker-compose concatene nombres a los que nosotros definimos tanto
+  para nuestros contenedores de BD, de nuestros microservicios, red y volúmenes, debemos
+  definirlas explícitamente:
+
+---------------------------------------------------------
+services:
+  mysql8:
+    container_name: mysql8   <------------- definiéndole el nombre de este contenedor
+    image: mysql:8
+
+
+  postgres14:
+    container_name: postgres14   <-------------
+    image: postgres:14-alpine
+
+  dk-ms-usuarios:
+    container_name: dk-ms-usuarios	<-------------
+    image: usuarios:latest
+
+  dk-ms-cursos:
+    container_name: dk-ms-cursos	<-------------
+    image: cursos:latest
+
+volumes:
+  data-mysql:
+    name: data-mysql	<-------------
+  data-postgres:
+    name: data-postgres	<-------------
+networks:
+    spring:
+      name: spring	<-------------
+---------------------------------------------------------
+
+- Ejecutamos nuestro docker-compose con estos cambios realizados
+
+	> docker-compose up -d
+
+- Como resultado, observamos que crea nuestros contenedores SIN CONCATENAR ningún nombre,
+  los crea tal cual con el nombre que le dimos. Además, no crea volúmenes ya que estos ya están creados.
+
+Resultados mostrados en consola:
+
+time="2023-03-07T13:03:06-05:00" level=warning msg="volume \"data-mysql\" already exists but was not created by Docker Compose. Use `external: true` to use an existing volume"
+time="2023-03-07T13:03:06-05:00" level=warning msg="volume \"data-postgres\" already exists but was not created by Docker Compose. Use `external: true` to use an existing volume"
+[+] Running 4/4
+ - Container postgres14      Started
+ - Container mysql8          Started
+ - Container dk-ms-cursos    Started
+ - Container dk-ms-usuarios  Started
+
+
+- Hasta este punto, si probamos nuestra aplicación desde postman debería de estar funcionando correctamente
+  y mostrando los datos que tenemos almacenado en las Bases de Datos.
+
+- Eliminamos todo, excepto los volúmenes. ¡Importante!, como ahora colocamos el nombre tal cual
+  de los volúmenes a usar, tener mucho cuidado con usar el -v ya que eso eliminará los volúmenes que
+  están definidos en el archivo docker-compose.yml, y ahora, en este caso esos volúmenes son los que 
+  ya tienen datos y los que ya hemos venido trabajando hasta el momento. Por eso solo usaremos el
+  siguiente comando que elimina todo excepto los volúmenes:
+	
+	> docker-compose down
+
+- Si listamos los volúmenes, deberíamos ver que nuestros volúmenes: data-mysql y data-postgres
+  aún se muestran en la lista:
+
+	> docker volume ls
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

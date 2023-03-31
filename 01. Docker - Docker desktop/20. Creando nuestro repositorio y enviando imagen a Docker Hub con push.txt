@@ -1,0 +1,109 @@
+CREANDO NUESTRO REPOSITORIO Y ENVIANDO IMAGEN A DOCKER HUB CON PUSH
+*******************************************************************
+- Vamos a docker hub, menú precios y seleccionamos la personal que equivale a S/ 0
+	https://hub.docker.com/signup?redirectTo=/subscription?plan=free
+
+- Nos logueamos si ya tenemos una cuenta.
+- Nos vamos a la opción de Repositories. Cuando hablamos de repositorios, o crear
+  repositorio, nos referimos a crear imágenes.
+- Una imagen o repositorio puede tener muchas etiquetas o tags.	
+- Creamos un nuevo repositorio para nuestro microservicio usuarios.
+- Repetimos el paso y creamos un repositorio para nuestro microservicio cursos.
+
+-------------------------------------------------------------------------------
+- Para insertar una nueva etiqueta en el repositorio de usuarios, ejecutaremos
+  el siguiente comando, pero antes..... ¡IMPORTANTE! ver la el guión siguiente.
+
+	> docker push magadiflo/usuarios:tagname
+
+-------------------------------------------------------------------------------
+  
+- Como hemos creado en docker hub los repositorio (imagen) llamados usuarios y cursos: 
+	magadiflo/usuarios
+	magadiflo/cursos
+  Es necesario que en nuestra pc local tengamos dichas imagenes, tal cual el nombre que 
+  creamos en docker hub.
+
+- Listamos las imágenes que tenemos en nuestra pc local
+
+	> docker images
+
+- Podemos observar que no tenemos ninguna imagen con dichos nombres, así que es necesario
+  crear las imágenes con dichos nombres.
+
+- PRIMERA FORMA: Una alternativa para construir las imágenes con dichos nombres sería:
+	
+	> docker build -t magadiflo/usuarios . -f .\dk-ms-usuarios\Dockerfile
+	> docker build -t magadiflo/cursos . -f .\dk-ms-cursos\Dockerfile
+
+- SEGUNDA FORMA: Como ya tenemos creada nuestras imagenes en local, ya que usamos docker-compose para eso,
+  podemos usar dichas imágenes creadas para crear un clon a partir de ellas y normbarlos como nos solicitan:
+
+	> docker tag curso-kubernetes-dk-ms-usuarios magadiflo/usuarios
+	> docker tag curso-kubernetes-dk-ms-cursos magadiflo/cursos
+
+	DONDE:
+		* tag, nos indica que escribiremos el tag correspondiente a la imagen que tenemos actualmente en local.
+
+- Si ahora listamos las imágenes, veremos que ya tenemos las imágenes (repositorios) con el nombre que 
+  nos solicita docker hub y además las imágenes originales de las cuales obtuvimos dichos clones.
+
+-------------------------------------------------------------------------------
+- Ahora sí, como ya tenemos las imágenes (repositorios) en nuestro local con el nombre
+  solicitado en docker hub, procedemos a subirlos a docker hub con el siguiente comando:
+
+	> docker push magadiflo/usuarios:latest
+
+¡IMPORTANTE! Para hacer un push necesitamos una cuenta de usuario, iniciar sesión,
+sino nos mostrará acceso denegado
+
+- Iniciando sesión desde nuestro terminal a docker hub:
+
+	> docker login
+	
+	DATO:
+		* Escribimos nuestro usuario: magadiflo
+		* Escribimos nuestra password: magadiflo
+
+- Si quisiéramos cerrar sesión:
+
+	> docker logout
+
+- Ahora sí, volvemos a intentar subir nuestra imagen a docker hub:
+
+	> docker push magadiflo/usuarios:latest 
+
+- Luego que finalice, revisamos docker hub en la web y debemos ver nuestra imagen (repositorio) ya subido.
+-------------------------------------------------------------------------------
+
+- Lo mismo hacemos para el repositorio de cursos:
+
+	> docker push magadiflo/cursos:latest
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

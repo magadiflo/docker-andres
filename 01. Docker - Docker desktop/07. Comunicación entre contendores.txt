@@ -1,0 +1,40 @@
+Creando la red llamada spring
+-------------------------------
+- Para que los contenedores puedan comunicarse necesitan pertenecer auna red, ésta se llamará spring:
+	
+	> docker network create spring
+
+- Para verificar que se ha credo, listamos las redes:
+
+	> docker network ls
+
+Comunicación entre contenedores
+-------------------------------
+- Crearemos un contenedor para usuarios y otro para cursos. Ambos deben pertenecer a 
+  la red creada: spring
+
+Creando contenedor a partir de la iamgen y agregándole a la red spring
+----------------------------------------------------------------------
+Creando contenedor para usuarios
+--------------------------------
+> docker run -p 8001:8001 -d --rm --name dk-ms-usuarios --network spring usuarios
+
+Donde:
+	* -d, significa en modo detached, es decir que el log no se muestre en nuestra consola.
+	* --rm, cuando se detenga el contenedor se elimine automáticamente.
+	* --name, le asignamos un nombre al contenedor: dk-ms-usuarios. Es importante que se llame así,
+	  	puesto que internamente dentro del microservicio cursos se usa un cliente Feign para comunicarse
+        	con el microservicio usuarios, esa comunicación se logra usando el nombre de este contenedor: dk-ms-usuarios.
+	* --network, le asignamos una red: spring
+	* usuarios, es el nombre de la imagen a partir del cual se crea este contenedor.
+
+Creando contenedor para cursos
+--------------------------------
+> docker run -p 8002:8002 -d --rm --name dk-ms-cursos --network spring cursos
+
+Ver en qué red está el contenedor
+---------------------------------
+
+> docker container inspect dk-ms-usuarios
+
+  En la opción de Networks, deberíamos ver nuestra red: spring

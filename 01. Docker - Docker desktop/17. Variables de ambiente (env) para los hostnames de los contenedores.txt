@@ -1,0 +1,64 @@
+VARIABLES DE AMBIENTE (ENV) PARA LOS HOSTNAMES DE LOS CONTENEDORES
+******************************************************************
+- Como en ambos microservicios usamos el cliente Feign para poder comunicarnos
+  con el otro microservicio, podemos crear las variables de ambiente para poder
+  colocar en ellos la referencia hacia el host al que se van a comunicar, de esa
+  manera evitamos colocarlos hackcodeado.
+
+- En el application.properties del microservicio usuarios, creamos la siguiente propiedad:
+
+	ms.cursos.url=${CURSOS_URL:dk-ms-cursos:8002}
+
+	DONDE:
+		* ms.cursos.url, es una propiedad que creamos para almacenar el valor del hostname 
+			al que se comunicará nuestro microservicio de usuarios.
+		* CURSOS_URL, es la variable de ambiente que crearemos que tendrá por defecto
+			el valor de dk-ms-cursos:8002
+
+- Luego, en el .env del microservicio usuarios agregamos nuestra variable de ambiente con su valor
+
+	CURSOS_URL=dk-ms-cursos:8002
+
+- Ahora, vamos a nuestro cliente Feign que es la interfaz ICursoClientFeign y modificamos
+  la anotación: 
+	@FeignClient(name = "dk-ms-cursos", url = "http://dk-ms-cursos:8002", path = "/api/v1/cursos")
+
+- Si observamos, dicha anotación tiene en código duro el valor y puerto del host al que se 
+  comunicará. Ahora usaremos nuestra variable de ambiente definida usando la propiedad definida
+  en el application.properties y el lenguaje de expresión ${}
+
+
+	@FeignClient(name = "dk-ms-cursos", url = "http://${ms.cursos.url}", path = "/api/v1/cursos")
+
+  NOTA:
+	En el ejemplo del tutor no usa el "http://", sino coloca defrente la propiedad dentro del lenguaje de
+	expresión.
+	
+- Ahora, como hicimos cambios en el código, necesitamos generar nuevamente la imagen:
+
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+- La misma operación debemos realizar para el microservicio cursos, crear nuestra variale de ambiente, 
+  agregarlo en el .propertie y modificar el código del cliente Feign.
+
+	application.properties
+		ms.usuarios.url=${USUARIOS_URL:dk-ms-usuarios:8001}
+
+	.env
+		USUARIOS_URL=dk-ms-usuarios:8001
+
+	IUsuarioClientFeign
+		@FeignClient(name = "dk-ms-usuarios", url = "http://${ms.usuarios.url}", path = "/api/v1/usuarios")
+
+- Ahora, como hicimos cambios en el código, necesitamos generar nuevamente la imagen:
+
+	> docker build -t cursos . -f .\dk-ms-cursos\Dockerfile
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+- Creamos los contenedores de las imágenes haciendo referencia al archivo .env
+	
+	> docker run -p 8001:8001 --env-file .\dk-ms-usuarios\.env -d --rm --name dk-ms-usuarios --network spring usuarios
+	> docker run -p 8002:8002 --env-file .\dk-ms-cursos\.env -d --rm --name dk-ms-cursos --network spring cursos
+		
+
+	

@@ -1,0 +1,76 @@
+- Para poder comunicar los contenedores de los microservicios cursos y usuarios con sus respectivas bases de datos,
+  es necesario cambiar en los application.properties el datasource.url.
+
+- Recordar que inicialmente lo teníamos como localhost, posteriormente cuando creamos los contenedores para dichos
+  microservicios y queríamos que se conecten a la BD de nuestra máquina local, cambiamos el localhost por host.docker.internal.
+
+- Ahora, ocurre que tenemos Dockerizado las BD de MySQL y PostgreSQL, por lo tanto necesitamos que los contenedores
+  de usuarios y cursos se comuniquen a esas BD Dockerizadas, por lo que ahora cambiaremos el host.docker.internal
+  por el nombre que le dimos a cada contenedor. ¡Importante! siempre que querramos establecer la comunicación, ésta
+  deberá ser con el nombre del contendor.
+
+- Para saber el nombre que le dimos a cada contenedor, recordar que al correr el contenedor usamos la bandera --name,
+  podemos usar el comando: docker ps, para listar todos los contenedores que se están ejecutando y ver en la opción
+  de NAMES
+	
+	* Para MySQL: mysql8
+	* Para PostgreSQL: postgres14
+
+- Finalmente en el archivo .properties el datasource.url para cada microservicio quedaría así:
+
+	dk-ms-cursos:
+		spring.datasource.url=jdbc:postgresql://postgres14:5432/bd_dk_ms_cursos
+
+	dk-ms-usuarios:
+		spring.datasource.url=jdbc:mysql://mysql8:3306/bd_dk_ms_usuarios
+
+- Como se realizaron cambios, se tendrá que volver a generar la imagen de cada microservicio y su correspondiente contenedor.
+
+	IMAGEN
+	******
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+	> docker build -t cursos . -f .\dk-ms-cursos\Dockerfile
+
+	CONTENEDOR
+	***********
+	> docker run -d -p 8001:8001 --rm --name dk-ms-usuarios --network spring usuarios
+	> docker run -d -p 8002:8002 --rm --name dk-ms-cursos --network spring cursos
+
+- Hasta el momento, tendríamos levantados los contenedores de MySQL, PostgreSQL, Usuarios y Cursos, por lo tanto
+  podemos ver los logs para ver si las tablas de cada microservico se han creado en su correspondiente BD.
+
+	> docker logs dk-ms-usuaios
+	> docker logs dk-ms-curos
+
+
+- Para ir revisando los datos almacenados en las tablas de cada base de datos, podríamos habrir una conexión desde nuestra
+  máquina local que apunte a las BD de los contenedores.
+
+	PARA MYSQL
+	**********
+	En nuestra pc local abrimos Laragon -> HeidiSQL, y creamos una nueva conexión con los datos que le establecimos
+      al contenedor de MySQL:
+
+	> Nombre de la conexión: Docker root
+	> Host: 127.0.0.1 (o localhost)
+	> Usuario: root
+	> Contraseña: magadiflo
+	> Puerto: 3307 (Recordar que es el puerto externo que le pusimos al contenedor de mysql)
+
+	PARA POSTGRESQL
+	***************
+	Abrimos DBeaver y creamos una nueva conexión para Postgresql:
+	
+	> Host: localhost
+	> Puerto: 5532
+	> Database: bd_dk_ms_cursos
+	> Nombre de usuario: postgres
+	> Contraseña: magadiflo
+
+
+- Probar en postman. Hasta est punto deberían estar funcionando todas las APIs
+
+
+
+
+	

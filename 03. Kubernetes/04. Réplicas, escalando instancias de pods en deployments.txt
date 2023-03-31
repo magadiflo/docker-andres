@@ -1,0 +1,10 @@
+REPLICAS, ESCALANDO INSTANCIAS DE PODS EN DEPLOYMENT
+----------------------------------------------------
+- Para poder escalar a 3 réplicas usamos el siguiente comando:
+	> kubectl scale deployment dk-ms-usuarios --replicas=3
+
+- Para ver los pods generados, ejecutamos:
+	> kubectl get pods
+
+- Para regresar a tener solo una instancia, simplemente réplicas lo igualamos a 1:
+	> kubectl scale deployment dk-ms-usuarios --replicas=1

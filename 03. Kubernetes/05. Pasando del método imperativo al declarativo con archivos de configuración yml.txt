@@ -1,0 +1,39 @@
+PASANDO DEL MÉTODO IMPERATIVO AL DECLARATIVO CON ARCHIVOS DE CONFIGURACIONES YML
+--------------------------------------------------------------------------------
+- Generamos el archivo yaml par nuestro servicio de mysql
+	> kubectl get service mysql8 -o yaml > dk-ms-mysql.yaml
+	
+	DONDE:
+		* >, indica que lo que se muestre antes de dicho operador
+			será agregado al archivo dk-ms-mysql.yaml
+
+- Modificamos el archivo yaml
+
+- Creamos el deployment de usuarios:
+	> kubectl create deployment dk-ms-usuarios --port=8001 --image=magadiflo/usuarios:latest --dry-run=client -o yaml > deployment-usuarios.yaml
+
+- Creamos el servicio de usuarios:
+	> kubectl get service dk-ms-usuarios -o yaml > dk-ms-usuarios.yaml
+
+TRABAJANDO CON LA FORMA DECLARATIVA YAML
+----------------------------------------
+- Eliminando el deployment de usuarios:
+	> kubectl delete -f .\deployment-usuarios.yaml
+
+- Verificamos que ya no está:
+	> kubectl get deployments
+
+- Creamos el deployment de usuarios:
+	> kubectl apply -f .\deployment-usuarios.yaml
+
+- Describir el servicio usuarios:
+	> kubectl describe service dk-ms-usuarios
+
+- Ver los servicios:
+	> kubectl get services
+
+- Ver la URL de nuestro servicio:
+	> minikube service dk-ms-usuarios
+
+- Ver el dashboard de minikube
+	> minikube dashboard

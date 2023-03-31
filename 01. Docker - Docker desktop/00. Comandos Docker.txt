@@ -1,0 +1,243 @@
+- Crear imagen docker, donde el punto indica que el archivo Dockerfile está en la raíz del proyecto y
+  en el que estamos posicionados mediante cmd:
+	> docker build .
+
+- Crear imagen docker dándole un nombre (tag -t):
+	> docker build -t usuarios .
+
+- Crear imagen docker dándole el nombre de usuarios y definiendo la ubicación del Dockerfile
+	> docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile
+
+- Listar las imágenes mostrando tag, identificador, fecha de creación, tamaño, etc: 
+	> docker images
+
+- Ejecutando contenedor a partir del identificador de la imagen: 
+	> docker run fe9574dc9377
+
+- Listar contenedores:
+	> docker ps
+
+- Listar todos los contenedores, incluso los que están detenidos:
+	> docker ps -a
+
+- Detener un contenedor específico ya sea escribiendo su identificador o su nombre:
+	> docker stop 65706481d425 (usando su identificador)
+	> docker stop relaxed_buck (usando su nombre, nombre asignado aleatoriamente)
+
+- Ejecutar contenedor asignando puerto (-p), donde el primer puerto 8001 es el puerto exterior, 
+  mientras que el siguiente puerto :8001 es el puerto interno que corresponde con el puerto
+  en donde está corriendo la aplicación internamente en el contenedor. El puerto exterior, puede
+  ser cualquier otro valor, mientras que el puerto interno, sí o sí debe ser el mismo en el que
+  internamente dentro del contenedor la aplicación se esté ejecutando:
+	> docker run -p 8001:8001 9b193211c0b0
+
+Conceptos y comandos para adjuntar (attach) o separar (dettach) contenedores del terminal
+*****************************************************************************************
+
+- Reinicia un contenedor que actualmente está detenido (con el nombre del contenedor o su identificador)
+	> docker start thirsty_spence
+
+- Reiniciamos el contenedor de forma attachada, es decir que esté pendiente de ir mostrando
+  el log en el terminal:
+	> docker start -a thirsty_spence
+
+- Ejecutando contenedor a partir del identificador de la imagen y asignandole un puerto, además
+  con la instrucción -d hacemos que la ejecución esté en modo dettached (separado, es decir que
+  no bloqueará ni se mostrará en la terminal. Por defecto, sin el -d sí queda ejecutándose
+  en la terminal).
+	>  docker run -d -p 8081:8001 usuarios
+
+- Attachar un contenedor para mostrar logs en consola, ya sea usando nombre del contendor
+  o identificador:
+	> docker attach 4233c776d809
+
+- Mostrar el log hasta el momento, a partir de su identificador:
+	> docker logs 666a3072e329
+
+Eliminar contenedores e imágenes
+********************************
+CONTENEDORES
+************
+- Eliminar contenedor, mediante su identificador o su nombre
+	> docker rm 4233c776d809
+
+- Eliminando varios contenedores separados por espacio
+	>  docker rm relaxed_buck strange_hodgkin
+
+- Elimina todos los contenedores que están detenidos
+	> docker container prune
+
+IMÁGENES
+********
+- Elimina una imagen por su identificador o nombre
+	> docker rmi ad2803fabcec
+
+- Elimina varias imágenes separados por espacio
+	> docker rmi 7ea2f841df1a fd9f668714b7
+
+- Elimina todas las imágenes que no tengan contenedores
+	> docker image prune
+
+
+Eliminar contenedores detenidos automáticamente
+***********************************************
+- Crea un contenedor pero cuando se le detenga (stop) este será
+  eliminado automáticamente. Esa última característica la brinda
+  la bandera --rm.
+	> docker run -p 8001:8001 -d --rm usuarios
+
+Ingresando en modo interactivo en contenedores
+**********************************************
+Inicialmente el Dockerfile tenía el ENTRYPOINT.
+El ENTRYPOINT, es más estricto, por defecto siempre se ejecutará el ENTRYPOINT,
+mientras que el CMD, si no se ingresa algún cmd se ejecutará éste.
+
+- Crea contenedores de forma que se pueda acceder mediante el cdm, dentro del contenedor:
+
+	> docker run -p 8001:8001 --rm -it usuarios /bin/sh
+
+i, interactive mode
+t, terminal
+/bin/sh, para poder ingresar a la cosola, terminal a la shell, reemplazará
+al CMD definido en el Dockerfile, es decir sobreescribirá lo que esté definido
+en el CMD del Dockerfile
+
+- Para salir del modo interactivo escribir:
+	> exit
+
+Copiando archivos hacia/desde el contenedor en ejecución
+********************************************************
+DESDE LA MÁQUINA LOCAL HACIA EL CONTENEDOR
+******************************************
+- Primero debemos ejecutar un contenedor en modo interactivo:
+	> docker run -p 8001:8001 --rm -it usuarios /bin/sh
+
+- Una vez dentro del terminal, ejecutamos ls para ver que tenemos
+  el .jar de nuestra aplicación.
+
+- Luego, en nuestra máquina local, creamos un archivo java(a modo de ejemplo)
+  llamado Login.java el cual será copiado a dentro del contenedor
+	
+	> docker cp .\Login.java 5e7a509503b1:/app/Login.java
+
+  DONDE:
+	* cp, copiar
+	* .\Login.java, archivo que copiaremos
+	* 5e7a509503b1, identificador del contenedor al cual será copiado
+	* /app/Login.java, archivo y lugar a donde será copiado el archivo de la pc local
+
+- Regresamos a la terminal donde tenemos el contenedor en modo interactivo y 
+  hacemos un ls para ver que ya tenemos nuestro archivo Login.java copiado
+  dentro de él.
+
+- Para ver el contendio del archivo java copiado podemos usar un editor de texto
+  en el terminal linux/unix
+	> vi Login.java
+- Para salir del editor de texto de Vi, escribimos
+	:q
+
+- Si luego de haber revisado el código del archivo Login.java, quisiéramos compilar
+  dicho archivo dentro del contenedor, entonces ejecutaríamos:
+	> javac Login.java
+
+- Luego de compilar, listamos los archivos (ls) y deberíamos ver el Login.class, que
+  es el archivo compilado.
+
+- Para ejecutar nuestro compilado
+	> java Login
+
+DESDE EL CONTENEDOR HACIA LA MÁQUINA LOCAL
+*******************************************
+- Usando el identificador del contenedor copiamos el archivo
+  Login.java que está dentro del contendor a nuestra pc local pero
+  con el nombre del archivo renombrado a Login2.java
+
+	>  docker cp 550bdb8fa76b:/app/Login.java .\Login2.java
+
+Copiando archivos logs de spring desde el contenedor
+****************************************************
+- Primero debemos agregar una configuración en el archivo properties de nuestro
+  microservicio usuarios
+	
+	logging.file.path=/app/logs
+
+  Eso significa que cuando nuestro proyecto se cree dentro del contenedor, el archivo
+  de logs se guardará en dicha ruta /app/logs
+
+- Luego debemos modificar el archivo Dockerfile agregándole la instrucción para crear
+  el directorio ./logs
+	> RUN mkdir ./logs
+
+- Copiando archivo de log desde el contenedor con identificador a la pc local
+
+	> docker cp 8b2ec9b1d8da:/app/logs ./logs
+
+
+Más detalles sobre las imágenes y contenedores con el comando inspect
+*********************************************************************
+- Para inspeccionar los detalles de una imagen (usando su identificador):
+	> docker image inspect 698ab9cf9712
+
+- Inspeccionar detalles del contenedor usando su identificador:
+	> docker container inspect 8b2ec9b1d8da
+
+
+Nombrando y etiquetando imágenes & contenedores
+***********************************************
+- Crea una imagen con nombre de repository y un tag
+
+	>  docker build -t usuarios:v2 . -f .\dk-ms-usuarios\Dockerfile
+
+  Donde:
+	* -t, tag para crear un nombre y su etiqueta
+	* usuarios, nombre de la imagen
+	* :v2, una etiqueta que le asignamos
+
+
+- A partir de la imagen anterior, crea un contenedor asignándole un nombre con --name
+	
+	> docker run -p 8001:8001 --rm -d --name dk-ms-usuarios usuarios:v2
+
+  Donde:
+	* --name, bandera que permite asignar un nombre al contenedor
+	* dk-ms-usuarios, nombre que le damos al contenedor
+	* usuarios:v2, nombre y etiqueta de la imagen
+
+
+Creando una redes en Docker
+***************************
+- Crea una red llamada spring:
+	> docker network create spring
+
+- Lista las redes existentes:
+	> docker network ls
+
+
+Creando contenedor a partir de la iamgen y agregándole a la red spring
+*******************************************************************************
+Creando contenedor para cursos
+******************************
+> docker run -p 8001:8001 -d --rm --name dk-ms-usuarios --network spring usuarios
+
+Donde:
+	* -d, significa en modo detached, es decir que el log no se muestre en nuestra consola.
+	* --rm, cuando se detenga el contenedor se elimine automáticamente.
+	* --name, le asignamos un nombre al contenedor: dk-ms-usuarios
+	* --network, le asignamos una red: spring
+	* usuarios, es el nombre de la imagen a partir del cual se crea este contenedor.
+
+Creando contenedor para usuarios
+********************************
+> docker run -p 8002:8002 -d --rm --name dk-ms-cursos --network spring cursos
+
+
+Ver en qué red está el contenedor
+*********************************
+
+> docker container inspect dk-ms-usuarios
+
+  En la opción de Networks, deberíamos ver nuestra red: spring
+
+Listar los volúmenes
+********************
+>  docker volume ls

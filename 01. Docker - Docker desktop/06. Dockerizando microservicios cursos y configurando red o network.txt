@@ -1,0 +1,35 @@
+Dockerizando microservicios cursos y usuarios
+---------------------------------------------
+- Como este microservicios usa una BD de Postgresql, que al momento
+  de Dockerizar el microservicios, se tratará de comunicar con la BD
+  de mi máquina local, entonces es necesario cambiar el localhost por
+  host.docker.internal en el archivo properties:
+
+	spring.datasource.url=jdbc:postgresql://host.docker.internal:5432/bd_dk_ms_cursos
+
+- Ahora, como el microservicios cursos se comunica mediante un cliente feign
+  al microservicio de usuarios, es necesario cambiar en la url el valor de localhost
+  por el nombre que le daremos al CONTENEDOR del microservicio usuarios, al cual se va a comunicar.
+  Normalmente, el nombre del contenedor debería ser igual al nombre del microservicio:
+
+	@FeignClient(name = "dk-ms-usuarios", url = "http://dk-ms-usuarios:8001", path = "/api/v1/usuarios")
+
+- Lo mismo, deberíamos hacer en el microservicio usuarios, ya que allí también
+  se usa un cliente Feign para comunicarse con el microservicio cursos y en su url
+  actualmente está: url = "http://host.docker.internal:8002", por lo tanto debería quedar:
+	
+	@FeignClient(name = "dk-ms-cursos", url = "http://dk-ms-cursos:8002", path = "/api/v1/cursos")
+
+- El siguiente paso sería copiar el archivo Dockerfile del microservicio usuarios, pegarlo 
+  en el microservicios cursos y realizar algunas modificaciones:
+
+	Cambiar los lugares donde diga usuarios por cursos
+	Cambiar el puerto a exponer, para este caso sería el 8002
+
+- Paso final, crear la imagen para el microservicio cursos.
+
+	> docker build -t cursos . -f .\dk-ms-cursos\Dockerfile
+
+- Crear la imagen del microservicio usurios ya que también realizamos cambios en código.
+	
+	>  docker build -t usuarios . -f .\dk-ms-usuarios\Dockerfile

@@ -1,0 +1,157 @@
+PASOS PREVIOS
+-----------------
+- Abrir la terminal en MODO ADMINISTRADOR.
+- Verificar que nuestro Kubernete (Minikube) esté corriendo y no detenido:
+	> minikube status
+	
+	NOTA:
+		* Por defecto, cuando reiniciamos la pc en windows, los servicios tienden
+		  a detenerse, por eso con el comando anterior, podríamos ver que el 
+		  kubelet y/o el apiserver estén en Stopped.
+
+- Si hay algún componente detenido, debemos reiniciarlo. Primero lo detenemos luego lo iniciamos:
+	> minikube stop
+	> minikube start --driver=hyperv
+
+	DONDE:
+		* --driver=hyperv, el hyperv es por que estamos en windows usando hyperv
+
+- Si volvemos a darle el minikube status veremos que ya todos están en Running.
+
+
+CREACIÓN DE FORMA IMPERATIVA DEL DEPLOYMENT
+-------------------------------------------
+- Abrimos el terminal en modo administrador y en la ruta raíz de nuestro proyecto /curso-kubernetes,
+  y ejecutamos el siguiente comando:
+	> kubectl create deployment mysql8 --image=mysql:8 --port=3306
+
+	DONDE:
+		* deployment mysql8, el mysql8 será el nombre del deployment.
+		* mysql:8, será el nombre de la imagen que será traiga de docker hub.
+		* 3306, valor del puerto de nuestro mysql
+
+- Al ejecutar dicho comando nos mostrará el siguiente mensaje:
+	$ deployment.apps/mysql8 created
+
+- Listamos los deployments que tenemos:
+	> kubectl get deployments
+
+- Vemos que con el comando anterior se muestra nuestro deployment de mysql8, pero
+  no está levantado (ready 0/1) y tampoco disponible (available 0)
+
+
+- Listamos del mismo modo los pods que tenemos:
+	> kubectl get pods
+
+- Nos mostrará el pod de mysql8 con el nombre que le dio: mysql8-5c8c4b6bd8-dwlzt,
+  tampoco estará levantado, algo ocurrió¡¡¡
+
+- Revisamos el pod con el describe, de la siguiente manera:
+	> kubectl describe pods mysql8-5c8c4b6bd8-dwlzt
+
+	DONDE:
+		* mysql8-5c8c4b6bd8-dwlzt, es el nombre del pod
+
+- Podemos revisar también usando el log:
+	> kubectl logs mysql8-5c8c4b6bd8-dwlzt
+
+- En dicho log, nos muestra que debemos especificar variables de ambiente para nuestro MySQL.
+
+
+DEPLOYMENT MYSQL CON LAS VARIABLES DE AMBIENTE
+----------------------------------------------
+- Debemos eliminar el deployment que tenemos de nuestro mysql8.
+- Listamos los deployments con uno de los siguiente comandos:
+	> kubectl get deployments
+	> kubectl get deploy
+
+- Eliminamos el deployment mysql8
+	> kubectl delete deployment mysql8
+
+- Volvemos a usar la línea de comando, pero esta vez para crear un archivo de configuración para nuestro
+  deployment:
+	> kubectl create deployment mysql8 --image=mysql:8 --port=3306 --dry-run=client -o yaml > deployment-mysql.yaml.
+
+	DONDE: 
+
+		*--dry-run=client, al ser del tipo client, solo va a imprimir el objeto que se enviaría al cluster pero sin enviarlo,
+			no se envía, solo se imprime la configuración, la podemos guardar en un archivo yml. Ese archivo .yaml,
+			la podemos modificar para agregar las variables de ambientes que requerimos.
+		* -o, sería output, la salida 
+		* yaml, sería el tipo de archivo que generará
+		* deployment-mysql.yaml, será el nombre de nuestro archivo.
+
+- Si vamos a la raíz de nuestro proyecto /curso-kubernetes, debemos encontrar nuestro archivo:
+	deployment-mysql.yaml
+
+- Abrimos nuestro archivo deployment-mysql.yaml y vemos que tenemos generado varias configuraciones
+  que iremos limpiando. Además allí mismo le agregamos las variables de ambientes para nuestro mysql
+
+- Una vez listo nuestro archivo deployment-mysql.yaml, ejecutamos el siguiente comando:
+	> kubectl apply -f .\deployment-mysql.yaml 
+
+- De esa manera habremos creado nuestro deployment y ya no tendremos problemas con lo de las variables de ambiente.
+
+- Verificamos si esta vez está todo funcionando y deberíamos ver que todo está en running:
+	> kubectl get deployments
+	> kubectl get pods
+
+- Verificamos mediante el describe si nuestro pod (usando su nombre) está asignado correctamente:
+	> kubectl describe pod mysql8-55f975db99-46xxm
+
+
+CREANDO EL SERVICIO DE MYSQL PARA LA COMUNICACIÓN INTERNA CON HOSTNAME
+----------------------------------------------------------------------
+- El objeto service nos permite exponer el deployment que creamos de mysql.
+- Los service nos permiten acceder a los pods que están configurados en un deployment, manejan el 
+  tráfico hacia esos pod mediante una IP fija que no cambia o hostname.
+----------------------------------------------------------------------
+
+- Usamos el siguiente comando:
+	> kubectl expose deployment mysql8 --port=3306 --type=ClusterIP
+
+DONDE:
+
+	* expose deployment, por que expondremos los pods de los deployments de mysql
+	* mysql8, nombre que le pusimos al deployment de mysql8 y el cual estamos exponiendo como un hostname,
+        precisamente ese mismo nombre es el que se utiliza en el properties del microservicio usuarios.
+	* --port=3306, puerto para poder llegar al pod, para que se puedan comunicar de forma interna
+        entre los diferentes pod que se quieran conectar a mysql, en nuestro caso sería el microservicio
+        de usuarios. 
+	* --type=ClusterIP, solo permite la comunicación interna entre los pods del cluster de Kubernetes,
+        independiente en la máquina en que estén los pods.
+
+- Verificamos si se creó listando todos los services:
+	> kubectl get services
+
+
+- Podemos usar el siguiente comando para describir nuestro servicio:
+	> kubectl describe service mysql8
+
+
+- Con el siguiente comando podemos ver todos los escenarios creados:
+	> kubectl get all
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
