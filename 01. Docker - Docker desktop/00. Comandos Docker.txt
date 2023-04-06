@@ -241,3 +241,18 @@ Ver en qué red está el contenedor
 Listar los volúmenes
 ********************
 >  docker volume ls
+
+Crear volumen
+********************
+> docker volume create world-db
+
+Crear un contenedor asignando volumen creado
+********************************************
+> docker container run -d -p 3306:3306 --name world-db -e MARIADB_USER=admin -e MARIADB_PASSWORD=admin -e MARIADB_ROOT_PASSWORD=magadiflo -e MARIADB_DATABASE=world-db --volume world-db:/var/lib/mysql mariadb:jammy
+
+DONDE:
+	* --volume, permitirá definir un volumen
+	* world-db:/var/lib/mysql, el primer valor (world-db) es el volumen creado. Recordar que dicho volumen
+		está creada en nuestra pc local. El segundo valor, (/var/lib/mysql), es la ruta donde mariadb escribe
+		los datos dentro del contenedor. Entonces, con toda esa instrucción le decimos que mariadb, esos datos
+		que escribes en /var/lib/mysql, por favor guárdalos en el volumen de la pc local (world-db)

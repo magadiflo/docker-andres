@@ -33,7 +33,7 @@ TRABAJANDO CON LA FORMA DECLARATIVA YAML
 	> kubectl get services
 
 - Ver la URL de nuestro servicio:
-	> minikube service dk-ms-usuarios
+	> minikube service dk-ms-usuarios --url
 
 - Ver el dashboard de minikube
 	> minikube dashboard
